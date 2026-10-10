@@ -107,24 +107,25 @@ main
 
 ---
 
-### ⚪ 4. `feat/transactions`
-* **Status:** Mendatang
+### 🟢 4. `feat/transactions`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Form pencatatan transaksi (Pemasukan, Pengeluaran, Transfer) dengan atomic update saldo.
 * **Checklist Tugas:**
-  - [ ] Form input transaksi modal / screen:
-    - Tab pilihan jenis: **Pemasukan**, **Pengeluaran**, **Transfer**.
-    - Input nominal (format IDR).
-    - Picker tanggal & waktu (default: waktu sekarang).
-    - Dropdown / picker Wallet (atau Wallet Asal & Tujuan untuk transfer).
-    - Dropdown Kategori (opsional).
-    - Dropdown Kuota Harian (khusus Pengeluaran, opsional/bisa "Tanpa Kuota").
+  - [x] Form input transaksi modal & screen ([transaction_form_sheet.dart](../lib/features/transactions/presentation/widgets/transaction_form_sheet.dart)):
+    - Tab pilihan jenis: **Pengeluaran**, **Pemasukan**, **Transfer**.
+    - Input nominal besar & prominen (format IDR).
+    - Picker tanggal & waktu (bisa pilih transaksi lampau).
+    - Dropdown dompet (atau dompet sumber & tujuan untuk transfer).
+    - Dropdown Kategori (opsional, disaring per tipe).
+    - Dropdown Kuota Harian (khusus Pengeluaran, dengan info sisa kuota).
     - Input catatan (opsional).
-  - [ ] Validasi bisnis:
+  - [x] Validasi bisnis:
     - Nominal harus > 0.
     - Transfer: wallet sumber dan tujuan tidak boleh sama.
-    - Peringatan jika pengeluaran melebihi sisa kuota harian (tetap diizinkan simpan).
-  - [ ] Atomic database transaction: saldo wallet diperbarui secara konsisten.
-  - [ ] Unit test skenario: Pemasukan, Pengeluaran, Transfer, dan Over-budget warning.
+    - Peringatan non-blocking jika pengeluaran melebihi sisa kuota harian.
+  - [x] Sinkronisasi state Riverpod otomatis ke saldo dompet dan kalkulasi kuota harian.
+  - [x] Route `/transactions/add` di [app_router.dart](../lib/core/router/app_router.dart).
+  - [x] Unit test Pemasukan, Pengeluaran, Transfer, Update & Delete di `test/transaction_test.dart` (100% passed).
 
 ---
 

@@ -4,6 +4,7 @@ import 'package:tally/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:tally/features/history/presentation/history_screen.dart';
 import 'package:tally/features/wallets/presentation/wallets_screen.dart';
 import 'package:tally/features/budgets/presentation/budgets_screen.dart';
+import 'package:tally/features/transactions/presentation/add_transaction_screen.dart';
 import 'package:tally/features/splash/presentation/splash_screen.dart';
 import 'package:tally/shared/widgets/main_scaffold.dart';
 
@@ -16,6 +17,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/transactions/add',
+        name: 'add-transaction',
+        builder: (context, state) => const AddTransactionScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),
