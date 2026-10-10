@@ -36,7 +36,7 @@ class MainScaffold extends StatelessWidget {
         leading: Padding(
           padding: const EdgeInsets.only(left: 20, top: 12, bottom: 12),
           child: Image.asset(
-            'assets/icons/tallyLogoTransparan.png',
+            'assets/icons/tallyAppIconForeground.png',
             fit: BoxFit.contain,
           ),
         ),

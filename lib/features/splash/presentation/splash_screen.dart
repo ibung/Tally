@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
-                  'assets/icons/tallyLogoTransparan.png',
+                  'assets/icons/tallyAppIconForeground.png',
                   width: 80,
                   height: 80,
                   fit: BoxFit.contain,
