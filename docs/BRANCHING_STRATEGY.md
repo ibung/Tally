@@ -29,12 +29,12 @@ Berikut adalah daftar branch fungsional (Opsi A - Granular) beserta ruang lingku
 ```
 main
  ├── feat/init-and-design-system      [SELESAI - MERGED]
- ├── feat/foundation-and-navigation   [AKTIF / BERIKUTNYA]
- ├── feat/wallets                     [MENDATANG]
- ├── feat/daily-budgets               [MENDATANG]
- ├── feat/transactions                [MENDATANG]
- ├── feat/dashboard                   [MENDATANG]
- └── feat/history                     [MENDATANG]
+ ├── feat/foundation-and-navigation   [SELESAI - MERGED]
+ ├── feat/wallets                     [SELESAI - MERGED]
+ ├── feat/daily-budgets               [SELESAI - MERGED]
+ ├── feat/transactions                [SELESAI - MERGED]
+ ├── feat/dashboard                   [SELESAI - MERGED]
+ └── feat/history                     [SELESAI - MERGED]
 ```
 
 ---
