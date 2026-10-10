@@ -10,7 +10,7 @@ class DatabaseHelper {
   static const _uuid = Uuid();
 
   static const _dbName = 'tally.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -107,7 +107,17 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Handle future migrations here
+    if (oldVersion < 2) {
+      // Hapus tabel lama dari versi uji coba awal untuk migrasi ke skema PRD
+      await db.execute('DROP TABLE IF EXISTS transactions');
+      await db.execute('DROP TABLE IF EXISTS budgets');
+      await db.execute('DROP TABLE IF EXISTS daily_budgets');
+      await db.execute('DROP TABLE IF EXISTS categories');
+      await db.execute('DROP TABLE IF EXISTS wallets');
+
+      // Buat ulang tabel dengan skema baru dan seed data
+      await _onCreate(db, newVersion);
+    }
   }
 
   Future<void> _seedDefaultData(Database db) async {
