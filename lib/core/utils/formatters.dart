@@ -13,15 +13,21 @@ class CurrencyFormatter {
     locale: 'id_ID',
   );
 
-  /// Format to full IDR: Rp 1.500.000
-  static String format(double amount) => _idrFormatter.format(amount);
+  /// Format to full IDR: Rp 25.000
+  static String format(num amount) => _idrFormatter.format(amount);
 
   /// Format compact: Rp 1,5 jt
-  static String formatCompact(double amount) {
+  static String formatCompact(num amount) {
     return 'Rp ${_compactFormatter.format(amount)}';
   }
 
-  /// Parse string back to double
+  /// Parse string to Rupiah integer (PRD Bab 7 & 8)
+  static int parseInt(String value) {
+    final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(cleaned) ?? 0;
+  }
+
+  /// Legacy parse to double
   static double parse(String value) {
     final cleaned = value.replaceAll(RegExp(r'[^0-9,.]'), '').replaceAll(',', '.');
     return double.tryParse(cleaned) ?? 0;
@@ -47,6 +53,16 @@ class DateFormatter {
 
   /// Senin, 15 Okt 2024
   static String formatFullDay(DateTime date) => _dayFormatter.format(date);
+
+  /// Format DateTime to YYYY-MM-DD local date (PRD Bab 8)
+  static String toLocalDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  /// Parse YYYY-MM-DD back to DateTime
+  static DateTime parseLocalDate(String localDate) {
+    final parts = localDate.split('-');
+    return DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+  }
 
   /// Relative: Hari ini, Kemarin, or date
   static String formatRelative(DateTime date) {

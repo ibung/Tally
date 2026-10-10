@@ -11,7 +11,7 @@ class MainScaffold extends StatelessWidget {
     (path: '/dashboard', icon: Icons.home_rounded, label: 'Home'),
     (path: '/history', icon: Icons.history_rounded, label: 'Riwayat'),
     (path: '/wallets', icon: Icons.account_balance_wallet_outlined, label: 'Wallet'),
-    (path: '/reports', icon: Icons.bar_chart_rounded, label: 'Laporan'),
+    (path: '/budgets', icon: Icons.pie_chart_outline_rounded, label: 'Kuota'),
   ];
 
   int _currentIndex(BuildContext context) {

@@ -12,19 +12,26 @@ class TransactionRepository {
       t.*,
       c.name as category_name,
       c.icon as category_icon,
-      c.color as category_color,
-      w.name as wallet_name
+      w.name as wallet_name,
+      sw.name as source_wallet_name,
+      dw.name as destination_wallet_name,
+      b.name as budget_name
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
     LEFT JOIN wallets w ON t.wallet_id = w.id
+    LEFT JOIN wallets sw ON t.source_wallet_id = sw.id
+    LEFT JOIN wallets dw ON t.destination_wallet_id = dw.id
+    LEFT JOIN daily_budgets b ON t.budget_id = b.id
   ''';
 
   Future<List<TransactionModel>> getAll({
-    int? walletId,
+    String? walletId,
     String? type,
-    DateTime? startDate,
-    DateTime? endDate,
-    int limit = 50,
+    String? localDate, // YYYY-MM-DD
+    String? startDate, // YYYY-MM-DD
+    String? endDate, // YYYY-MM-DD
+    String? searchQuery,
+    int limit = 100,
     int offset = 0,
   }) async {
     final database = await _db.database;
@@ -32,32 +39,41 @@ class TransactionRepository {
     final args = <dynamic>[];
 
     if (walletId != null) {
-      conditions.add('t.wallet_id = ?');
-      args.add(walletId);
+      conditions.add('(t.wallet_id = ? OR t.source_wallet_id = ? OR t.destination_wallet_id = ?)');
+      args.addAll([walletId, walletId, walletId]);
     }
     if (type != null) {
       conditions.add('t.type = ?');
       args.add(type);
     }
+    if (localDate != null) {
+      conditions.add('t.local_date = ?');
+      args.add(localDate);
+    }
     if (startDate != null) {
-      conditions.add('t.date >= ?');
-      args.add(startDate.toIso8601String());
+      conditions.add('t.local_date >= ?');
+      args.add(startDate);
     }
     if (endDate != null) {
-      conditions.add('t.date <= ?');
-      args.add(endDate.toIso8601String());
+      conditions.add('t.local_date <= ?');
+      args.add(endDate);
+    }
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      conditions.add('(t.note LIKE ? OR c.name LIKE ? OR w.name LIKE ?)');
+      final pattern = '%${searchQuery.trim()}%';
+      args.addAll([pattern, pattern, pattern]);
     }
 
     final where = conditions.isNotEmpty ? 'WHERE ${conditions.join(' AND ')}' : '';
     final maps = await database.rawQuery(
-      '$_joinedQuery $where ORDER BY t.date DESC LIMIT ? OFFSET ?',
+      '$_joinedQuery $where ORDER BY t.occurred_at DESC LIMIT ? OFFSET ?',
       [...args, limit, offset],
     );
 
     return maps.map(TransactionModel.fromMap).toList();
   }
 
-  Future<TransactionModel?> getById(int id) async {
+  Future<TransactionModel?> getById(String id) async {
     final database = await _db.database;
     final maps = await database.rawQuery(
       '$_joinedQuery WHERE t.id = ?',
@@ -69,94 +85,82 @@ class TransactionRepository {
 
   Future<int> insert(TransactionModel transaction) async {
     final database = await _db.database;
-    return database.transaction((txn) async {
-      final id = await txn.insert('transactions', transaction.toMap());
-      // Update wallet balance
-      final delta = transaction.type == TransactionType.income
-          ? transaction.amount
-          : -transaction.amount;
-      await txn.rawUpdate(
-        'UPDATE wallets SET balance = balance + ?, updated_at = ? WHERE id = ?',
-        [delta, DateTime.now().toIso8601String(), transaction.walletId],
-      );
-      return id;
-    });
+    return database.insert('transactions', transaction.toMap());
   }
 
-  Future<void> update(TransactionModel oldTx, TransactionModel newTx) async {
+  Future<int> update(TransactionModel transaction) async {
     final database = await _db.database;
-    await database.transaction((txn) async {
-      // Revert old transaction effect
-      final oldDelta = oldTx.type == TransactionType.income
-          ? -oldTx.amount
-          : oldTx.amount;
-      await txn.rawUpdate(
-        'UPDATE wallets SET balance = balance + ?, updated_at = ? WHERE id = ?',
-        [oldDelta, DateTime.now().toIso8601String(), oldTx.walletId],
-      );
-      // Apply new transaction effect
-      final newDelta = newTx.type == TransactionType.income
-          ? newTx.amount
-          : -newTx.amount;
-      await txn.rawUpdate(
-        'UPDATE wallets SET balance = balance + ?, updated_at = ? WHERE id = ?',
-        [newDelta, DateTime.now().toIso8601String(), newTx.walletId],
-      );
-      await txn.update(
-        'transactions',
-        newTx.copyWith(updatedAt: DateTime.now()).toMap(),
-        where: 'id = ?',
-        whereArgs: [newTx.id],
-      );
-    });
+    return database.update(
+      'transactions',
+      transaction.copyWith(updatedAt: DateTime.now()).toMap(),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
   }
 
-  Future<void> delete(TransactionModel transaction) async {
+  Future<int> delete(String id) async {
     final database = await _db.database;
-    await database.transaction((txn) async {
-      await txn.delete(
-        'transactions',
-        where: 'id = ?',
-        whereArgs: [transaction.id],
-      );
-      // Revert wallet balance
-      final delta = transaction.type == TransactionType.income
-          ? -transaction.amount
-          : transaction.amount;
-      await txn.rawUpdate(
-        'UPDATE wallets SET balance = balance + ?, updated_at = ? WHERE id = ?',
-        [delta, DateTime.now().toIso8601String(), transaction.walletId],
-      );
-    });
+    return database.delete(
+      'transactions',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
-  Future<Map<String, double>> getSummary({
-    required DateTime startDate,
-    required DateTime endDate,
-    int? walletId,
-  }) async {
+  /// Ringkasan pemasukan dan pengeluaran pada tanggal tertentu (localDate: YYYY-MM-DD)
+  Future<({int income, int expense})> getDailySummary(String localDate) async {
     final database = await _db.database;
-    final args = <dynamic>[
-      startDate.toIso8601String(),
-      endDate.toIso8601String(),
-    ];
-    String walletFilter = '';
-    if (walletId != null) {
-      walletFilter = 'AND wallet_id = ?';
-      args.add(walletId);
-    }
-
     final result = await database.rawQuery('''
       SELECT 
-        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
-        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
+        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
       FROM transactions
-      WHERE date >= ? AND date <= ? $walletFilter
-    ''', args);
+      WHERE local_date = ?
+    ''', [localDate]);
 
-    return {
-      'income': (result.first['total_income'] as num?)?.toDouble() ?? 0,
-      'expense': (result.first['total_expense'] as num?)?.toDouble() ?? 0,
-    };
+    return (
+      income: (result.first['total_income'] as num?)?.toInt() ?? 0,
+      expense: (result.first['total_expense'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Menghitung total pengeluaran untuk suatu kuota pada tanggal tertentu (PRD Bab 7)
+  Future<int> getBudgetSpentForDate(String budgetId, String localDate) async {
+    final database = await _db.database;
+    final result = await database.rawQuery('''
+      SELECT COALESCE(SUM(amount), 0) as total
+      FROM transactions
+      WHERE budget_id = ? AND local_date = ? AND type = 'expense'
+    ''', [budgetId, localDate]);
+
+    return (result.first['total'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Menghitung saldo akhir historis hingga akhir tanggal terpilih (PRD Bab 7)
+  Future<int> getHistoricalEndBalance(String localDate) async {
+    final database = await _db.database;
+
+    // Total saldo awal semua wallet
+    final walletRes = await database.rawQuery(
+      'SELECT COALESCE(SUM(opening_balance), 0) as total_opening FROM wallets WHERE is_archived = 0',
+    );
+    final totalOpening = (walletRes.first['total_opening'] as num?)?.toInt() ?? 0;
+
+    // Pemasukan sampai tanggal tersebut
+    final incomeRes = await database.rawQuery('''
+      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
+      WHERE type = 'income' AND local_date <= ?
+    ''', [localDate]);
+    final totalIncome = (incomeRes.first['total'] as num?)?.toInt() ?? 0;
+
+    // Pengeluaran sampai tanggal tersebut
+    final expenseRes = await database.rawQuery('''
+      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
+      WHERE type = 'expense' AND local_date <= ?
+    ''', [localDate]);
+    final totalExpense = (expenseRes.first['total'] as num?)?.toInt() ?? 0;
+
+    // Catatan: Transfer tidak mengubah total saldo seluruh wallet (PRD Bab 7)
+    return totalOpening + totalIncome - totalExpense;
   }
 }

@@ -8,59 +8,71 @@ extension CategoryTypeX on CategoryType {
 }
 
 class CategoryModel {
-  final int? id;
+  final String id;
   final String name;
-  final String? icon;
-  final int? color;
   final CategoryType type;
+  final String? icon;
+  final String? color;
+  final bool isArchived;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   const CategoryModel({
-    this.id,
+    required this.id,
     required this.name,
+    required this.type,
     this.icon,
     this.color,
-    required this.type,
+    this.isArchived = false,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   CategoryModel copyWith({
-    int? id,
+    String? id,
     String? name,
-    String? icon,
-    int? color,
     CategoryType? type,
+    String? icon,
+    String? color,
+    bool? isArchived,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return CategoryModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      type: type ?? this.type,
       icon: icon ?? this.icon,
       color: color ?? this.color,
-      type: type ?? this.type,
+      isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   factory CategoryModel.fromMap(Map<String, dynamic> map) {
     return CategoryModel(
-      id: map['id'] as int?,
+      id: map['id'] as String,
       name: map['name'] as String,
-      icon: map['icon'] as String?,
-      color: map['color'] as int?,
       type: CategoryTypeX.fromString(map['type'] as String),
+      icon: map['icon'] as String?,
+      color: map['color'] as String?,
+      isArchived: (map['is_archived'] as int?) == 1,
       createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String? ?? map['created_at'] as String),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id,
+      'id': id,
       'name': name,
+      'type': type.value,
       'icon': icon,
       'color': color,
-      'type': type.value,
+      'is_archived': isArchived ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

@@ -52,21 +52,22 @@ main
 
 ---
 
-### 🟡 1. `feat/foundation-and-navigation`
-* **Status:** Langkah Selanjutnya
+### 🟢 1. `feat/foundation-and-navigation`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Menyelaraskan skema database SQLite dengan PRD Bab 8 dan menyempurnakan struktur navigasi.
 * **Checklist Tugas:**
-  - [ ] Perbarui tabel SQLite di [database_helper.dart](../lib/core/database/database_helper.dart):
-    - `wallets`: `id`, `name`, `type`, `opening_balance`, `color`, `icon`, `is_archived`, timestamp.
-    - `categories`: `id`, `name`, `type` (`income`/`expense`), `icon`, `color`, `is_archived`.
-    - `daily_budgets`: `id`, `name`, `daily_limit`, `start_date`, `end_date`, `is_active`, timestamp.
-    - `transactions`: `id`, `type`, `amount`, `category_id`, `wallet_id`, `source_wallet_id`, `destination_wallet_id`, `budget_id`, `occurred_at`, `local_date`, `note`, timestamp.
-  - [ ] Sesuaikan model data di `lib/shared/models/` sesuai skema database.
-  - [ ] Ganti tab ke-4 dari **Laporan** menjadi **Kuota** (`/budgets`) di:
+  - [x] Perbarui tabel SQLite di [database_helper.dart](../lib/core/database/database_helper.dart):
+    - `wallets`: `id` (UUID), `name`, `type`, `opening_balance` (IDR integer), `color`, `icon`, `is_archived`, timestamp.
+    - `categories`: `id` (UUID), `name`, `type` (`income`/`expense`), `icon`, `color`, `is_archived`.
+    - `daily_budgets`: `id` (UUID), `name`, `daily_limit` (IDR integer), `start_date`, `end_date`, `is_active`, timestamp.
+    - `transactions`: `id` (UUID), `type`, `amount` (IDR integer), `category_id`, `wallet_id`, `source_wallet_id`, `destination_wallet_id`, `budget_id`, `occurred_at`, `local_date`, `note`, timestamp.
+  - [x] Sesuaikan model data di `lib/shared/models/` sesuai skema database.
+  - [x] Tambahkan Repository (`WalletRepository`, `TransactionRepository`, `BudgetRepository`, `CategoryRepository`).
+  - [x] Ganti tab ke-4 dari **Laporan** menjadi **Kuota** (`/budgets`) di:
     - [main_scaffold.dart](../lib/shared/widgets/main_scaffold.dart)
     - [app_router.dart](../lib/core/router/app_router.dart)
-  - [ ] Buat skeleton screen untuk `BudgetsScreen` di `lib/features/budgets/presentation/budgets_screen.dart`.
-  - [ ] Jalankan `flutter analyze` & `flutter test` (pastikan 100% clean).
+  - [x] Buat skeleton screen untuk `BudgetsScreen` di `lib/features/budgets/presentation/budgets_screen.dart`.
+  - [x] Tambahkan unit test di `test/foundation_test.dart` dan jalankan `flutter test` + `flutter analyze` (100% passed).
 
 ---
 

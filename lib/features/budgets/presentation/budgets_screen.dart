@@ -6,10 +6,8 @@ class BudgetsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Budgets - Coming Soon'),
-      ),
+    return const Center(
+      child: Text('Kuota - Coming Soon'),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tally/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:tally/features/history/presentation/history_screen.dart';
 import 'package:tally/features/wallets/presentation/wallets_screen.dart';
-import 'package:tally/features/reports/presentation/reports_screen.dart';
+import 'package:tally/features/budgets/presentation/budgets_screen.dart';
 import 'package:tally/features/splash/presentation/splash_screen.dart';
 import 'package:tally/shared/widgets/main_scaffold.dart';
 
@@ -36,9 +36,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const WalletsScreen(),
           ),
           GoRoute(
-            path: '/reports',
-            name: 'reports',
-            builder: (context, state) => const ReportsScreen(),
+            path: '/budgets',
+            name: 'budgets',
+            builder: (context, state) => const BudgetsScreen(),
           ),
         ],
       ),
