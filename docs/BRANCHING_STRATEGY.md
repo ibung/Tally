@@ -146,18 +146,19 @@ main
 
 ---
 
-### ⚪ 6. `feat/history`
-* **Status:** Mendatang
+### 🟢 6. `feat/history`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Penelusuran riwayat transaksi lintas waktu, filter, dan edit/hapus.
 * **Checklist Tugas:**
-  - [ ] Daftar transaksi terkelompok per tanggal (group by date).
-  - [ ] Bar pencarian instan (search by note / category / wallet).
-  - [ ] Filter dialog:
-    - Rentang tanggal (range picker).
+  - [x] Daftar transaksi terkelompok per tanggal (group by date).
+  - [x] Bar pencarian instan (search by note / category / wallet).
+  - [x] Filter dialog & sheet:
+    - Rentang tanggal (preset bulan ini, 7/30 hari, range picker kustom).
     - Jenis transaksi (Semua / Pemasukan / Pengeluaran / Transfer).
     - Filter berdasarkan wallet tertentu.
-  - [ ] Aksi Edit & Hapus Transaksi (menghitung ulang saldo dan kuota secara otomatis).
-  - [ ] Konfirmasi dialog sebelum menghapus transaksi.
+  - [x] Aksi Edit & Hapus Transaksi (menghitung ulang saldo dan kuota secara otomatis).
+  - [x] Konfirmasi dialog sebelum menghapus transaksi.
+  - [x] Unit test & widget test di `test/history_test.dart` (100% passed).
 
 ---
 

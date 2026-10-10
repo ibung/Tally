@@ -15,6 +15,9 @@ final selectedTransactionDateProvider = StateProvider<DateTime>((ref) {
   return DateTime.now();
 });
 
+/// Counter untuk sinkronisasi otomatis provider lintas fitur (misal: riwayat transaksi)
+final transactionsVersionProvider = StateProvider<int>((ref) => 0);
+
 class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
   static const _uuid = Uuid();
 
@@ -74,6 +77,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     await refresh();
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
+    ref.read(transactionsVersionProvider.notifier).state++;
   }
 
   Future<void> updateTransaction({
@@ -114,6 +118,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     await refresh();
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
+    ref.read(transactionsVersionProvider.notifier).state++;
   }
 
   Future<void> deleteTransaction(String id) async {
@@ -124,6 +129,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     await refresh();
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
+    ref.read(transactionsVersionProvider.notifier).state++;
   }
 }
 
