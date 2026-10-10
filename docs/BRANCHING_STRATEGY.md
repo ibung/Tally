@@ -71,20 +71,21 @@ main
 
 ---
 
-### ⚪ 2. `feat/wallets`
-* **Status:** Mendatang
+### 🟢 2. `feat/wallets`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Pengelolaan dompet (wallet) pengguna beserta perhitungan saldo.
 * **Checklist Tugas:**
-  - [ ] Repository & Riverpod Provider untuk Wallet (`wallet_repository.dart`, `wallet_provider.dart`).
-  - [ ] Tampilan halaman Wallet ([wallets_screen.dart](../lib/features/wallets/presentation/wallets_screen.dart)):
-    - Ringkasan total saldo saat ini.
-    - List kartu wallet aktif (nama, jenis: Tunai/Bank/E-wallet, saldo).
-  - [ ] Bottom Sheet / Dialog Tambah & Edit Wallet:
+  - [x] Repository & Riverpod Provider untuk Wallet (`wallet_repository.dart`, `wallet_providers.dart`).
+  - [x] Tampilan halaman Wallet ([wallets_screen.dart](../lib/features/wallets/presentation/wallets_screen.dart)):
+    - Hero Card ringkasan total saldo saat ini (`totalActiveBalanceProvider`).
+    - List kartu wallet (nama, jenis: Tunai/Bank/E-wallet/Lainnya, saldo).
+    - Tab filter Dompet Aktif vs Diarsipkan.
+  - [x] Bottom Sheet Tambah & Edit Wallet ([wallet_form_sheet.dart](../lib/features/wallets/presentation/widgets/wallet_form_sheet.dart)):
     - Input nama wallet.
-    - Pilihan jenis wallet.
-    - Input saldo awal (Rupiah).
-  - [ ] Aksi arsipkan wallet (tidak menghapus riwayat transaksi).
-  - [ ] Unit test untuk CRUD dan perhitungan saldo awal.
+    - Pilihan jenis wallet (Tunai, Bank, E-Wallet, Lainnya).
+    - Input saldo awal Rupiah (live format).
+  - [x] Aksi arsipkan/pulihkan wallet (tidak menghapus riwayat transaksi) & konfirmasi hapus.
+  - [x] Unit test untuk CRUD dan eksklusi saldo arsip di `test/wallet_test.dart` (100% passed).
 
 ---
 
