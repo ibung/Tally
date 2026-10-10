@@ -89,19 +89,21 @@ main
 
 ---
 
-### ⚪ 3. `feat/daily-budgets`
-* **Status:** Mendatang
+### 🟢 3. `feat/daily-budgets`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Pengelolaan kuota belanja harian tanpa rollover.
 * **Checklist Tugas:**
-  - [ ] Repository & Riverpod Provider untuk Daily Budget.
-  - [ ] Tampilan halaman Kuota:
-    - List kuota belanja harian yang aktif (misal: "Makan", "Transportasi").
-    - Menampilkan batas harian (`daily_limit`), terpakai hari ini, dan sisa kuota.
-  - [ ] Bottom Sheet / Dialog Tambah & Edit Kuota:
-    - Nama kuota.
-    - Batas nominal per hari (Rp).
-  - [ ] Aksi arsipkan/nonaktifkan kuota.
-  - [ ] Unit test CRUD kuota harian.
+  - [x] Repository & Riverpod Provider untuk Daily Budget (`budget_repository.dart`, `budget_providers.dart`).
+  - [x] Tampilan halaman Kuota ([budgets_screen.dart](../lib/features/budgets/presentation/budgets_screen.dart)):
+    - Hero Card ringkasan total kuota harian, terpakai, dan sisa hari ini (`dailyBudgetSummaryProvider`).
+    - List kartu kuota aktif (nama, batas harian, progress bar, dan badge *over-budget*).
+    - Tab filter Kuota Aktif vs Nonaktif.
+  - [x] Bottom Sheet Tambah & Edit Kuota ([budget_form_sheet.dart](../lib/features/budgets/presentation/widgets/budget_form_sheet.dart)):
+    - Input nama kuota & chip saran cepat ("Makan", "Kopi & Jajan", dll).
+    - Input batas nominal harian Rupiah (live format).
+    - Catatan edukatif reset harian tanpa rollover.
+  - [x] Aksi aktifkan/nonaktifkan kuota & konfirmasi hapus.
+  - [x] Unit test CRUD kuota harian di `test/budget_test.dart` (100% passed).
 
 ---
 
