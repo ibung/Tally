@@ -58,4 +58,4 @@ flutter_launcher_icons:
   ios: false
   image_path: "assets/icons/tallyAppIcon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icons/tallyLogoTransparan.png"
+  adaptive_icon_foreground: "assets/icons/tallyAppIconForeground.png"
