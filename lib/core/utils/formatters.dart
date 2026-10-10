@@ -64,7 +64,12 @@ class DateFormatter {
     return DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
   }
 
-  /// Relative: Hari ini, Kemarin, or date
+  static final DateFormat _timeFormatter = DateFormat('HH:mm');
+
+  /// 14:30
+  static String formatTime(DateTime date) => _timeFormatter.format(date);
+
+  /// Relative: Hari ini, Kemarin, Besok, or date
   static String formatRelative(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -73,6 +78,7 @@ class DateFormatter {
 
     if (diff == 0) return 'Hari ini';
     if (diff == 1) return 'Kemarin';
+    if (diff == -1) return 'Besok';
     return formatDate(date);
   }
 }

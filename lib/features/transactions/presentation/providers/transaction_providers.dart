@@ -135,7 +135,18 @@ final transactionsProvider =
 /// Ringkasan Pemasukan & Pengeluaran pada tanggal terpilih
 final dailySummaryProvider = FutureProvider<({int income, int expense})>((ref) async {
   final date = ref.watch(selectedTransactionDateProvider);
+  ref.watch(transactionsProvider);
   final localDate = DateFormatter.toLocalDate(date);
   final repo = ref.read(transactionRepositoryProvider);
   return repo.getDailySummary(localDate);
 });
+
+/// Saldo Akhir Historis pada tanggal terpilih (PRD Bab 7)
+final historicalEndBalanceProvider = FutureProvider<int>((ref) async {
+  final date = ref.watch(selectedTransactionDateProvider);
+  ref.watch(transactionsProvider);
+  final localDate = DateFormatter.toLocalDate(date);
+  final repo = ref.read(transactionRepositoryProvider);
+  return repo.getHistoricalEndBalance(localDate);
+});
+

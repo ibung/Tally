@@ -129,19 +129,20 @@ main
 
 ---
 
-### ⚪ 5. `feat/dashboard`
-* **Status:** Mendatang
+### 🟢 5. `feat/dashboard`
+* **Status:** Selesai (Lolos Uji & Siap di-merge ke `main`)
 * **Tujuan:** Tampilan beranda interaktif berbasis tanggal.
 * **Checklist Tugas:**
-  - [ ] Date picker & tombol navigasi hari sebelumnya/berikutnya.
-  - [ ] Kartu ringkasan harian:
+  - [x] Date picker & tombol navigasi hari sebelumnya/berikutnya.
+  - [x] Kartu ringkasan harian:
     - Total Pemasukan tanggal terpilih.
     - Total Pengeluaran tanggal terpilih.
     - Saldo Akhir Historis per tanggal terpilih.
-  - [ ] Progress / indikator penggunaan Kuota Harian pada tanggal terpilih.
-  - [ ] List transaksi pada tanggal terpilih.
-  - [ ] Floating Action Button (FAB) `+` untuk membuka form pencatatan transaksi.
-  - [ ] Tap transaksi untuk membuka detail / edit transaksi.
+  - [x] Progress / indikator penggunaan Kuota Harian pada tanggal terpilih.
+  - [x] List transaksi pada tanggal terpilih.
+  - [x] Floating Action Button (FAB) `+` untuk membuka form pencatatan transaksi.
+  - [x] Tap transaksi untuk membuka detail / edit transaksi.
+  - [x] Unit test & widget test di `test/dashboard_test.dart` (100% passed).
 
 ---
 

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tally/core/utils/formatters.dart';
 import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/repositories/transaction_repository.dart';
