@@ -260,12 +260,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     }
     final isOverBudgetWarning = selectedBudget != null && inputAmount > selectedBudget.remaining;
 
+    final screenHeight = MediaQuery.of(context).size.height;
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    // Batasi tinggi maksimal agar benar-benar berada di area bawah (seperti sheet di dompet dan kuota: ~50-55% layar)
+    // Saat keyboard terbuka, sesuaikan dinamis di atas keyboard dengan tetap menjaga jarak dari appbar.
+    final maxAllowedHeight = bottomInset > 0
+        ? screenHeight - topPadding - kToolbarHeight - 16
+        : screenHeight * 0.55;
+
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: maxAllowedHeight,
+      ),
       padding: EdgeInsets.only(
         top: 20,
         left: 20,
         right: 20,
-        bottom: bottomInset + 24,
+        bottom: bottomInset + 20,
       ),
       decoration: const BoxDecoration(
         color: AppTheme.white,
@@ -274,6 +286,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -289,7 +302,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Title
               Text(
@@ -301,7 +314,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // Type Switcher: Pengeluaran | Pemasukan | Transfer
               Container(
@@ -341,7 +354,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 16),
 
               // Nominal Input (Besar & Prominen)
               const Text(
@@ -352,23 +365,23 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   color: AppTheme.black,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: _onAmountChanged,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.black,
                 ),
                 decoration: const InputDecoration(
                   hintText: 'Rp 0',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // Over-Budget Warning Notice (Prinsip PRD: tidak menghakimi)
               if (isOverBudgetWarning) ...[
@@ -397,7 +410,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
 
               // Wallet Selector (Income / Expense)
@@ -410,7 +423,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     color: AppTheme.black,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedWalletId,
                   decoration: const InputDecoration(
@@ -424,7 +437,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedWalletId = val),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
 
               // Transfer: Source & Destination Wallets
@@ -433,7 +446,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   'Dari Dompet (Sumber)',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.black),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedSourceWalletId,
                   decoration: const InputDecoration(
@@ -444,13 +457,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedSourceWalletId = val),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 const Text(
                   'Ke Dompet (Tujuan)',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.black),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedDestinationWalletId,
                   decoration: const InputDecoration(
@@ -461,7 +474,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedDestinationWalletId = val),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
 
               // Kuota Harian (Khusus Pengeluaran, PRD Bab 7)
@@ -474,7 +487,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     color: AppTheme.black,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String?>(
                   initialValue: _selectedBudgetId,
                   decoration: const InputDecoration(
@@ -494,7 +507,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ],
                   onChanged: (val) => setState(() => _selectedBudgetId = val),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
 
               // Kategori (Khusus Income / Expense)
@@ -507,7 +520,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     color: AppTheme.black,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String?>(
                   initialValue: _selectedCategoryId,
                   decoration: const InputDecoration(
@@ -527,7 +540,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ],
                   onChanged: (val) => setState(() => _selectedCategoryId = val),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
 
               // Tanggal & Waktu
@@ -539,12 +552,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   color: AppTheme.black,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               InkWell(
                 onTap: _pickDateTime,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppTheme.grey100,
                     borderRadius: BorderRadius.circular(12),
@@ -568,7 +581,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // Catatan (Opsional)
               const Text(
@@ -579,15 +592,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   color: AppTheme.black,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _noteController,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   hintText: 'Contoh: Makan siang nasi padang',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
 
               // Tombol Simpan Transaksi
               ElevatedButton(

@@ -8,9 +8,9 @@ class MainScaffold extends StatelessWidget {
   const MainScaffold({super.key, required this.child});
 
   static const _tabs = [
-    (path: '/dashboard', icon: Icons.home_rounded, label: 'Home'),
+    (path: '/dashboard', icon: Icons.home_rounded, label: 'Beranda'),
     (path: '/history', icon: Icons.history_rounded, label: 'Riwayat'),
-    (path: '/wallets', icon: Icons.account_balance_wallet_outlined, label: 'Wallet'),
+    (path: '/wallets', icon: Icons.account_balance_wallet_outlined, label: 'Dompet'),
     (path: '/budgets', icon: Icons.pie_chart_outline_rounded, label: 'Kuota'),
   ];
 
