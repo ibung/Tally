@@ -45,7 +45,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   void _setTypeFilter(TransactionType? type) {
     ref.read(historyFilterProvider.notifier).update((state) {
-      if (state.type == type) {
+      if (type == null || state.type == type) {
         return state.copyWith(clearType: true);
       }
       return state.copyWith(type: type);
