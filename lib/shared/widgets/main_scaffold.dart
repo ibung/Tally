@@ -104,8 +104,7 @@ class MainScaffold extends ConsumerWidget {
               ),
               onPressed: () {
                 HapticFeedback.lightImpact();
-                final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
-                ref.read(themeModeProvider.notifier).state = newMode;
+                ref.read(themeModeProvider.notifier).toggle();
               },
             ),
             const SizedBox(width: 8),
