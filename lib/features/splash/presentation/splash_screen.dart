@@ -63,26 +63,11 @@ class _SplashScreenState extends State<SplashScreen>
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/icons/tallyAppIconForeground.png',
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 16),
-                // const Text(
-                //   'Tally',
-                //   style: TextStyle(
-                //     fontSize: 22,
-                //     fontWeight: FontWeight.w700,
-                //     letterSpacing: 2.0,
-                //     color: AppTheme.black,
-                //   ),
-                // ),
-              ],
+            child: Image.asset(
+              'assets/icons/tallyAppIconForeground.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.contain,
             ),
           ),
         ),

@@ -12,7 +12,6 @@ dependencies:
 
   # State Management
   flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.3.5
 
   # Navigation
   go_router: ^14.6.2
@@ -24,24 +23,12 @@ dependencies:
   # Internationalization (date & currency format)
   intl: ^0.19.0
 
-  # Charts (future)
-  fl_chart: ^0.69.0
-
-  # UI utilities
-  cupertino_icons: ^1.0.8
-  gap: ^3.0.1
-  iconsax: ^0.0.8
+  # Utilities
   uuid: ^4.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # Code generation
-  build_runner: ^2.4.12
-  riverpod_generator: ^2.4.3
-  custom_lint: ^0.7.6
-  riverpod_lint: ^2.4.0
 
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.14.4
@@ -50,7 +37,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
     - assets/icons/
 
 flutter_launcher_icons:

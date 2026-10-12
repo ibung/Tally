@@ -4,11 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:tally/core/theme/app_theme.dart';
 
 class MainScaffold extends StatelessWidget {
-  final Widget child;
+  final StatefulNavigationShell? navigationShell;
+  final Widget? child;
 
-  const MainScaffold({super.key, required this.child});
+  const MainScaffold({
+    super.key,
+    this.navigationShell,
+    this.child,
+  }) : assert(navigationShell != null || child != null);
 
-  static const _tabs = [
+  static const tabs = [
     (path: '/dashboard', icon: Icons.home_rounded, label: 'Beranda'),
     (path: '/history', icon: Icons.history_rounded, label: 'Riwayat'),
     (path: '/wallets', icon: Icons.account_balance_wallet_outlined, label: 'Dompet'),
@@ -17,11 +22,25 @@ class MainScaffold extends StatelessWidget {
   ];
 
   int _currentIndex(BuildContext context) {
+    if (navigationShell != null) {
+      return navigationShell!.currentIndex;
+    }
     final location = GoRouterState.of(context).matchedLocation;
-    for (var i = 0; i < _tabs.length; i++) {
-      if (location.startsWith(_tabs[i].path)) return i;
+    for (var i = 0; i < tabs.length; i++) {
+      if (location.startsWith(tabs[i].path)) return i;
     }
     return 0;
+  }
+
+  void _onTap(BuildContext context, int index) {
+    if (navigationShell != null) {
+      navigationShell!.goBranch(
+        index,
+        initialLocation: index == navigationShell!.currentIndex,
+      );
+    } else {
+      context.go(tabs[index].path);
+    }
   }
 
   @override
@@ -36,20 +55,34 @@ class MainScaffold extends StatelessWidget {
           backgroundColor: AppTheme.white,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leadingWidth: 56,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 20, top: 12, bottom: 12),
-            child: Image.asset(
-              'assets/icons/tallyAppIconForeground.png',
-              fit: BoxFit.contain,
-            ),
+          titleSpacing: 20,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/icons/tallyAppIconForeground.png',
+                height: 32,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Tally',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  color: AppTheme.black,
+                ),
+              ),
+            ],
           ),
         ),
-        body: child,
+        body: navigationShell ?? child!,
         bottomNavigationBar: _BottomNavBar(
           currentIndex: currentIndex,
-          onTap: (i) => context.go(_tabs[i].path),
-          tabs: _tabs,
+          onTap: (i) => _onTap(context, i),
+          tabs: tabs,
         ),
       ),
     );
