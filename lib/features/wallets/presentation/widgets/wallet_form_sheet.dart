@@ -45,7 +45,9 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
     _nameController = TextEditingController(text: wallet?.name ?? '');
     _selectedType = wallet?.type ?? 'cash';
 
-    final initialBalance = wallet?.openingBalance ?? 0;
+    final initialBalance = widget.initialWallet != null
+        ? widget.initialWallet!.currentBalance
+        : (wallet?.openingBalance ?? 0);
     _balanceController = TextEditingController(
       text: initialBalance > 0 ? CurrencyFormatter.format(initialBalance) : '',
     );
@@ -74,7 +76,7 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
 
     setState(() => _isLoading = true);
     final name = _nameController.text.trim();
-    final openingBalance = CurrencyFormatter.parseInt(_balanceController.text);
+    final targetBalance = CurrencyFormatter.parseInt(_balanceController.text);
 
     try {
       if (widget.initialWallet != null) {
@@ -82,13 +84,13 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
               id: widget.initialWallet!.id,
               name: name,
               type: _selectedType,
-              openingBalance: openingBalance,
+              targetBalance: targetBalance,
             );
       } else {
         await ref.read(walletsProvider.notifier).createWallet(
               name: name,
               type: _selectedType,
-              openingBalance: openingBalance,
+              openingBalance: targetBalance,
             );
       }
       if (mounted) Navigator.of(context).pop();
@@ -229,15 +231,25 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
               ),
               const SizedBox(height: 20),
 
-              // Saldo Awal
+              // Saldo Awal / Saldo Dompet
               Text(
-                'Saldo Awal (Rp)',
+                isEdit ? 'Saldo Dompet (Rp)' : 'Saldo Awal (Rp)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary(context),
                 ),
               ),
+              if (isEdit) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Perubahan nominal saldo akan dicatat otomatis sebagai riwayat Koreksi Saldo.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary(context),
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               TextFormField(
                 controller: _balanceController,

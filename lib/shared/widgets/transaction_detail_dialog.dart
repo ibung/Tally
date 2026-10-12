@@ -49,34 +49,40 @@ class _TransactionDetailDialog extends ConsumerWidget {
     };
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
+  bool get _isCorrection =>
+      tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+
+  void _confirmDelete(BuildContext dialogContext, WidgetRef ref) {
     showDialog(
-      context: context,
+      context: dialogContext,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.cardBg(context),
+        backgroundColor: AppTheme.cardBg(dialogContext),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Hapus Transaksi?',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(dialogContext)),
         ),
         content: Text(
           'Yakin ingin menghapus transaksi sebesar ${CurrencyFormatter.format(tx.amount)}?',
-          style: TextStyle(color: AppTheme.textSecondary(context)),
+          style: TextStyle(color: AppTheme.textSecondary(dialogContext)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(dialogContext))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryButtonBg(context),
-              foregroundColor: AppTheme.primaryButtonText(context),
+              backgroundColor: AppTheme.error(dialogContext),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
             onPressed: () async {
               Navigator.pop(ctx);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
               await ref.read(transactionsProvider.notifier).deleteTransaction(tx.id);
             },
             child: const Text('Hapus'),
@@ -135,7 +141,7 @@ class _TransactionDetailDialog extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              tx.type.label,
+                              _isCorrection ? 'Koreksi Saldo' : tx.type.label,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white.withValues(alpha: 0.6),
@@ -241,7 +247,6 @@ class _TransactionDetailDialog extends ConsumerWidget {
                           icon: const Icon(Icons.delete_outline, size: 17),
                           label: const Text('Hapus'),
                           onPressed: () {
-                            Navigator.pop(context);
                             _confirmDelete(context, ref);
                           },
                         ),

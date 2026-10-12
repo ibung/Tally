@@ -68,6 +68,12 @@ class WalletRepository {
 
   Future<int> delete(String id) async {
     final database = await _db.database;
+    // Hapus transaksi yang terkait dengan wallet ini agar tidak menjadi data orphan
+    await database.delete(
+      'transactions',
+      where: 'wallet_id = ? OR source_wallet_id = ? OR destination_wallet_id = ?',
+      whereArgs: [id, id, id],
+    );
     return database.delete('wallets', where: 'id = ?', whereArgs: [id]);
   }
 

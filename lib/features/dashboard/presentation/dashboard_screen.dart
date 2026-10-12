@@ -82,6 +82,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   IconData _getTransactionIcon(TransactionModel tx) {
+    if (tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo')) {
+      return Icons.tune_rounded;
+    }
     if (tx.type == TransactionType.transfer) {
       return Icons.swap_horiz_rounded;
     }
@@ -1027,10 +1030,13 @@ class _TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = tx.type == TransactionType.transfer
-        ? '${tx.sourceWalletName ?? "Dompet"} ➔ ${tx.destinationWalletName ?? "Dompet"}'
-        : (tx.categoryName ??
-            (tx.type == TransactionType.income ? 'Pemasukan' : 'Pengeluaran'));
+    final isCorrection = tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+    final title = isCorrection
+        ? (tx.note ?? 'Koreksi Saldo')
+        : tx.type == TransactionType.transfer
+            ? '${tx.sourceWalletName ?? "Dompet"} ➔ ${tx.destinationWalletName ?? "Dompet"}'
+            : (tx.categoryName ??
+                (tx.type == TransactionType.income ? 'Pemasukan' : 'Pengeluaran'));
 
     final amountText = tx.type == TransactionType.income
         ? '+${CurrencyFormatter.format(tx.amount)}'
@@ -1114,7 +1120,7 @@ class _TransactionListItem extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (tx.note != null && tx.note!.isNotEmpty)
+                        if (tx.note != null && tx.note!.isNotEmpty && !isCorrection)
                           Text(
                             '• "${tx.note!}"',
                             style: TextStyle(

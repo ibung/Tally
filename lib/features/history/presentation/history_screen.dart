@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tally/core/theme/app_theme.dart';
 import 'package:tally/core/utils/formatters.dart';
 import 'package:tally/features/history/presentation/providers/history_providers.dart';
+import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:tally/features/wallets/presentation/providers/wallet_providers.dart';
 import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/widgets/transaction_detail_dialog.dart';
@@ -70,6 +71,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   IconData _getTransactionIcon(TransactionModel tx) {
+    if (tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo')) {
+      return Icons.tune_rounded;
+    }
     if (tx.type == TransactionType.transfer) {
       return Icons.swap_horiz_rounded;
     }
@@ -523,6 +527,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 tx: tx,
                                 icon: _getTransactionIcon(tx),
                                 onTap: () => _showTransactionDetails(context, tx),
+                                onDelete: () {
+                                  ref.read(transactionsProvider.notifier).deleteTransaction(tx.id);
+                                },
                               ),
                             ),
                           ],
@@ -636,19 +643,24 @@ class _HistoryListItem extends StatelessWidget {
   final TransactionModel tx;
   final IconData icon;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const _HistoryListItem({
     required this.tx,
     required this.icon,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final title = tx.type == TransactionType.transfer
-        ? '${tx.sourceWalletName ?? "Dompet"} ➔ ${tx.destinationWalletName ?? "Dompet"}'
-        : (tx.categoryName ??
-            (tx.type == TransactionType.income ? 'Pemasukan' : 'Pengeluaran'));
+    final isCorrection = tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+    final title = isCorrection
+        ? (tx.note ?? 'Koreksi Saldo')
+        : tx.type == TransactionType.transfer
+            ? '${tx.sourceWalletName ?? "Dompet"} ➔ ${tx.destinationWalletName ?? "Dompet"}'
+            : (tx.categoryName ??
+                (tx.type == TransactionType.income ? 'Pemasukan' : 'Pengeluaran'));
 
     final amountText = tx.type == TransactionType.income
         ? '+${CurrencyFormatter.format(tx.amount)}'
@@ -656,7 +668,7 @@ class _HistoryListItem extends StatelessWidget {
             ? '-${CurrencyFormatter.format(tx.amount)}'
             : CurrencyFormatter.format(tx.amount);
 
-    return Container(
+    final itemWidget = Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppTheme.cardBg(context),
@@ -725,7 +737,7 @@ class _HistoryListItem extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (tx.note != null && tx.note!.isNotEmpty)
+                        if (tx.note != null && tx.note!.isNotEmpty && !isCorrection)
                           Text(
                             '• "${tx.note!}"',
                             style: TextStyle(
@@ -765,6 +777,58 @@ class _HistoryListItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (onDelete == null) return itemWidget;
+
+    return Dismissible(
+      key: Key('tx_${tx.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppTheme.cardBg(context),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              'Hapus Transaksi?',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
+            ),
+            content: Text(
+              'Yakin ingin menghapus transaksi sebesar ${CurrencyFormatter.format(tx.amount)}?',
+              style: TextStyle(color: AppTheme.textSecondary(context)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.error(context),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Hapus'),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (_) => onDelete!(),
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: AppTheme.error(context).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.centerRight,
+        child: Icon(Icons.delete_outline_rounded, color: AppTheme.error(context), size: 22),
+      ),
+      child: itemWidget,
     );
   }
 }

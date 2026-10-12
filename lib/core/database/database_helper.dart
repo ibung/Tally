@@ -24,8 +24,20 @@ class DatabaseHelper {
     return await openDatabase(
       path,
       version: _dbVersion,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+      onOpen: (db) async {
+        // Bersihkan transaksi orphan dari wallet yang sudah tidak ada
+        await db.execute('''
+          DELETE FROM transactions 
+          WHERE wallet_id IS NOT NULL 
+            AND wallet_id NOT IN (SELECT id FROM wallets)
+            AND source_wallet_id IS NULL
+        ''');
+      },
     );
   }
 

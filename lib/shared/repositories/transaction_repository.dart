@@ -112,10 +112,11 @@ class TransactionRepository {
     final database = await _db.database;
     final result = await database.rawQuery('''
       SELECT 
-        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
-      FROM transactions
-      WHERE local_date = ?
+        COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) as total_income,
+        COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expense
+      FROM transactions t
+      LEFT JOIN wallets w ON t.wallet_id = w.id
+      WHERE t.local_date = ? AND (w.id IS NULL OR w.is_archived = 0)
     ''', [localDate]);
 
     return (
@@ -140,23 +141,27 @@ class TransactionRepository {
   Future<int> getHistoricalEndBalance(String localDate) async {
     final database = await _db.database;
 
-    // Total saldo awal semua wallet
+    // Total saldo awal semua wallet aktif
     final walletRes = await database.rawQuery(
       'SELECT COALESCE(SUM(opening_balance), 0) as total_opening FROM wallets WHERE is_archived = 0',
     );
     final totalOpening = (walletRes.first['total_opening'] as num?)?.toInt() ?? 0;
 
-    // Pemasukan sampai tanggal tersebut
+    // Pemasukan sampai tanggal tersebut untuk wallet aktif
     final incomeRes = await database.rawQuery('''
-      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE type = 'income' AND local_date <= ?
+      SELECT COALESCE(SUM(t.amount), 0) as total 
+      FROM transactions t
+      INNER JOIN wallets w ON t.wallet_id = w.id
+      WHERE w.is_archived = 0 AND t.type = 'income' AND t.local_date <= ?
     ''', [localDate]);
     final totalIncome = (incomeRes.first['total'] as num?)?.toInt() ?? 0;
 
-    // Pengeluaran sampai tanggal tersebut
+    // Pengeluaran sampai tanggal tersebut untuk wallet aktif
     final expenseRes = await database.rawQuery('''
-      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE type = 'expense' AND local_date <= ?
+      SELECT COALESCE(SUM(t.amount), 0) as total 
+      FROM transactions t
+      INNER JOIN wallets w ON t.wallet_id = w.id
+      WHERE w.is_archived = 0 AND t.type = 'expense' AND t.local_date <= ?
     ''', [localDate]);
     final totalExpense = (expenseRes.first['total'] as num?)?.toInt() ?? 0;
 

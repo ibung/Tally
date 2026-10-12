@@ -97,6 +97,9 @@ class AppTheme {
   static Color secondaryButtonText(BuildContext context) =>
       isDark(context) ? white : black;
 
+  static Color error(BuildContext context) =>
+      const Color(0xFFE53935);
+
   static SystemUiOverlayStyle currentSystemUiStyle(BuildContext context) =>
       isDark(context) ? darkSystemUiStyle : systemUiStyle;
 

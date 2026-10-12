@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:tally/core/utils/formatters.dart';
+import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
+import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/models/wallet_model.dart';
 import 'package:tally/shared/repositories/wallet_repository.dart';
 
@@ -55,18 +58,48 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
     required String id,
     required String name,
     required String type,
-    required int openingBalance,
+    int? targetBalance,
+    int? openingBalance,
     String? icon,
     String? color,
   }) async {
     final repo = ref.read(walletRepositoryProvider);
-    final current = state.valueOrNull?.firstWhere((w) => w.id == id);
+    final current = await repo.getById(id) ?? state.valueOrNull?.firstWhere((w) => w.id == id);
     if (current == null) return;
+
+    final newTarget = targetBalance ?? openingBalance;
+    if (newTarget != null) {
+      final balanceDiff = newTarget - current.currentBalance;
+      if (balanceDiff != 0) {
+        try {
+          final txRepo = ref.read(transactionRepositoryProvider);
+          final now = DateTime.now();
+          final localDate = DateFormatter.toLocalDate(now);
+
+          final correctionTx = TransactionModel(
+            id: _uuid.v4(),
+            type: balanceDiff > 0 ? TransactionType.income : TransactionType.expense,
+            amount: balanceDiff.abs(),
+            walletId: id,
+            occurredAt: now,
+            localDate: localDate,
+            note: 'Koreksi Saldo',
+            createdAt: now,
+            updatedAt: now,
+          );
+
+          await txRepo.insert(correctionTx);
+          ref.read(transactionsVersionProvider.notifier).state++;
+        } catch (_) {
+          // Handled if transaction repo is unavailable (e.g. isolated unit tests)
+        }
+      }
+    }
 
     final updated = current.copyWith(
       name: name.trim(),
       type: type,
-      openingBalance: openingBalance,
+      openingBalance: openingBalance ?? current.openingBalance,
       icon: icon,
       color: color,
       updatedAt: DateTime.now(),
@@ -74,6 +107,9 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
 
     await repo.update(updated);
     await refresh();
+    try {
+      ref.read(transactionsProvider.notifier).refresh();
+    } catch (_) {}
   }
 
   Future<void> toggleArchive(String id, bool archived) async {

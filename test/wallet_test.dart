@@ -1,8 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:tally/features/wallets/presentation/providers/wallet_providers.dart';
+import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/models/wallet_model.dart';
+import 'package:tally/shared/repositories/transaction_repository.dart';
 import 'package:tally/shared/repositories/wallet_repository.dart';
+
+class FakeTxRepositoryForWalletTest implements TransactionRepository {
+  final List<TransactionModel> inserted = [];
+
+  @override
+  Future<int> insert(TransactionModel transaction) async {
+    inserted.add(transaction);
+    return 1;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 // Fake in-memory repository for unit testing
 class FakeWalletRepository implements WalletRepository {
@@ -151,6 +167,70 @@ void main() {
       expect(updated.name, 'Baru');
       expect(updated.type, 'e-wallet');
       expect(updated.openingBalance, 75000);
+    });
+
+    test('Updating wallet with increased targetBalance generates Koreksi Saldo income transaction', () async {
+      final fakeTxRepo = FakeTxRepositoryForWalletTest();
+      final testContainer = ProviderContainer(
+        overrides: [
+          walletRepositoryProvider.overrideWithValue(fakeRepo),
+          transactionRepositoryProvider.overrideWithValue(fakeTxRepo),
+        ],
+      );
+      addTearDown(testContainer.dispose);
+
+      await testContainer.read(walletsProvider.notifier).createWallet(
+            name: 'Mandiri',
+            type: 'bank',
+            openingBalance: 2185985,
+          );
+
+      final walletId = (await testContainer.read(walletsProvider.future)).first.id;
+      await testContainer.read(walletsProvider.notifier).updateWallet(
+            id: walletId,
+            name: 'Mandiri',
+            type: 'bank',
+            targetBalance: 2200000,
+          );
+
+      expect(fakeTxRepo.inserted.length, 1);
+      final tx = fakeTxRepo.inserted.first;
+      expect(tx.type, TransactionType.income);
+      expect(tx.amount, 2200000 - 2185985);
+      expect(tx.note, 'Koreksi Saldo');
+      expect(tx.walletId, walletId);
+    });
+
+    test('Updating wallet with decreased targetBalance generates Koreksi Saldo expense transaction', () async {
+      final fakeTxRepo = FakeTxRepositoryForWalletTest();
+      final testContainer = ProviderContainer(
+        overrides: [
+          walletRepositoryProvider.overrideWithValue(fakeRepo),
+          transactionRepositoryProvider.overrideWithValue(fakeTxRepo),
+        ],
+      );
+      addTearDown(testContainer.dispose);
+
+      await testContainer.read(walletsProvider.notifier).createWallet(
+            name: 'Mandiri',
+            type: 'bank',
+            openingBalance: 2200000,
+          );
+
+      final walletId = (await testContainer.read(walletsProvider.future)).first.id;
+      await testContainer.read(walletsProvider.notifier).updateWallet(
+            id: walletId,
+            name: 'Mandiri',
+            type: 'bank',
+            targetBalance: 2000000,
+          );
+
+      expect(fakeTxRepo.inserted.length, 1);
+      final tx = fakeTxRepo.inserted.first;
+      expect(tx.type, TransactionType.expense);
+      expect(tx.amount, 200000);
+      expect(tx.note, 'Koreksi Saldo');
+      expect(tx.walletId, walletId);
     });
   });
 }
