@@ -271,14 +271,25 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialBudget != null;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final topPadding = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
+    // Batasi tinggi sheet agar mingguan & bulanan konsisten dengan harian (tidak mencot ke atas layar)
+    final maxSheetHeight = screenHeight * 0.70;
+    final calculatedMaxHeight = bottomInset > 0
+        ? (screenHeight - topPadding - 16)
+        : maxSheetHeight;
+
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: calculatedMaxHeight,
+      ),
       padding: EdgeInsets.only(
-        top: 24,
+        top: 20,
         left: 20,
         right: 20,
-        bottom: bottomInset + 24,
+        bottom: bottomInset + 20,
       ),
       decoration: BoxDecoration(
         color: AppTheme.cardBg(context),
@@ -287,6 +298,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          physics: const BouncingScrollPhysics(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
