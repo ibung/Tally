@@ -23,9 +23,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -36,7 +36,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.grey200,
+                  color: AppTheme.border(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -50,12 +50,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppTheme.grey100,
+                      color: AppTheme.subtleBg(context),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       CategoryIconHelper.getIcon(category.icon),
-                      color: AppTheme.black,
+                      color: AppTheme.textPrimary(context),
                       size: 20,
                     ),
                   ),
@@ -66,19 +66,19 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       children: [
                         Text(
                           category.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.black,
+                            color: AppTheme.textPrimary(context),
                           ),
                         ),
                         Text(
                           category.type == CategoryType.expense
                               ? 'Kategori Pengeluaran'
                               : 'Kategori Pemasukan',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.grey600,
+                            color: AppTheme.textSecondary(context),
                           ),
                         ),
                       ],
@@ -88,10 +88,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Divider(color: AppTheme.grey200, height: 1),
+            Divider(color: AppTheme.border(context), height: 1),
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: AppTheme.black),
-              title: const Text('Edit Kategori'),
+              leading: Icon(Icons.edit_outlined, color: AppTheme.textPrimary(context)),
+              title: Text(
+                'Edit Kategori',
+                style: TextStyle(color: AppTheme.textPrimary(context)),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 CategoryFormSheet.show(context, category: category);
@@ -102,16 +105,17 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 category.isArchived
                     ? Icons.unarchive_outlined
                     : Icons.archive_outlined,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
               title: Text(
                 category.isArchived ? 'Pulihkan Kategori' : 'Arsipkan Kategori',
+                style: TextStyle(color: AppTheme.textPrimary(context)),
               ),
               subtitle: Text(
                 category.isArchived
                     ? 'Tampilkan kembali di pilihan transaksi'
                     : 'Sembunyikan dari pilihan saat mencatat transaksi',
-                style: const TextStyle(fontSize: 11, color: AppTheme.grey600),
+                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary(context)),
               ),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -132,10 +136,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.black),
-              title: const Text(
+              leading: Icon(Icons.delete_outline_rounded, color: AppTheme.textPrimary(context)),
+              title: Text(
                 'Hapus Kategori',
-                style: TextStyle(color: AppTheme.black),
+                style: TextStyle(color: AppTheme.textPrimary(context)),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -152,25 +156,25 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.white,
+        backgroundColor: AppTheme.cardBg(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Hapus Kategori?',
-          style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppTheme.textPrimary(context), fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Kategori "${category.name}" akan dihapus permanen. Transaksi lama dengan kategori ini tidak akan terhapus.',
-          style: const TextStyle(color: AppTheme.grey800, fontSize: 13),
+          style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.grey600)),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.black,
-              foregroundColor: AppTheme.white,
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
@@ -192,20 +196,21 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        color: AppTheme.black,
-        backgroundColor: AppTheme.white,
+        color: AppTheme.textPrimary(context),
+        backgroundColor: AppTheme.cardBg(context),
         onRefresh: () => ref.read(categoriesProvider.notifier).refresh(),
         child: categoriesAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.black),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: AppTheme.textPrimary(context)),
           ),
           error: (err, _) => Center(
-            child: Text('Terjadi kesalahan: $err'),
+            child: Text('Terjadi kesalahan: $err', style: TextStyle(color: AppTheme.textPrimary(context))),
           ),
           data: (allCategories) {
             final activeList = allCategories.where((c) => !c.isArchived).toList();
@@ -234,34 +239,37 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: AppTheme.white,
+                            color: AppTheme.cardBg(context),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppTheme.black, width: 1.5),
-                            boxShadow: const [
+                            border: Border.all(
+                              color: isDark ? AppTheme.darkBorderStrong : AppTheme.black,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
                               BoxShadow(
-                                color: Color(0x08000000),
+                                color: isDark ? const Color(0x20000000) : const Color(0x08000000),
                                 blurRadius: 10,
-                                offset: Offset(0, 4),
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
                                   Icon(
                                     Icons.grid_view_rounded,
                                     size: 18,
-                                    color: AppTheme.grey600,
+                                    color: AppTheme.textSecondary(context),
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Kelola Kategori',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: AppTheme.grey600,
+                                      color: AppTheme.textSecondary(context),
                                       letterSpacing: 0.2,
                                     ),
                                   ),
@@ -274,20 +282,20 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                 children: [
                                   Text(
                                     '${activeList.length}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w800,
-                                      color: AppTheme.black,
+                                      color: AppTheme.textPrimary(context),
                                       letterSpacing: -1,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
+                                  Text(
                                     'Kategori Aktif',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: AppTheme.grey600,
+                                      color: AppTheme.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -318,7 +326,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                             Container(
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: AppTheme.grey100,
+                                color: AppTheme.subtleBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
@@ -351,19 +359,23 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.black,
+                                  color: AppTheme.primaryButtonBg(context),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
-                                    Icon(Icons.add_rounded, size: 16, color: AppTheme.white),
-                                    SizedBox(width: 6),
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 16,
+                                      color: AppTheme.primaryButtonText(context),
+                                    ),
+                                    const SizedBox(width: 6),
                                     Text(
                                       'Tambah',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: AppTheme.white,
+                                        color: AppTheme.primaryButtonText(context),
                                       ),
                                     ),
                                   ],
@@ -426,14 +438,14 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                             Container(
                               width: 64,
                               height: 64,
-                              decoration: const BoxDecoration(
-                                color: AppTheme.grey100,
+                              decoration: BoxDecoration(
+                                color: AppTheme.subtleBg(context),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.category_outlined,
                                 size: 30,
-                                color: AppTheme.grey600,
+                                color: AppTheme.textSecondary(context),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -441,10 +453,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                               _showArchived
                                   ? 'Tidak ada kategori yang diarsipkan'
                                   : 'Belum ada kategori',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.black,
+                                color: AppTheme.textPrimary(context),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -453,9 +465,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                   ? 'Kategori yang diarsipkan akan tampil di sini'
                                   : 'Tambahkan kategori baru untuk mencatat keuangan lebih teratur',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: AppTheme.grey600,
+                                color: AppTheme.textSecondary(context),
                               ),
                             ),
                             if (!_showArchived) ...[
@@ -466,8 +478,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                   defaultType: _selectedTypeFilter ?? CategoryType.expense,
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.black,
-                                  side: const BorderSide(color: AppTheme.black),
+                                  foregroundColor: AppTheme.textPrimary(context),
+                                  side: BorderSide(color: AppTheme.borderStrong(context)),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -500,9 +512,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             decoration: BoxDecoration(
-                              color: AppTheme.white,
+                              color: AppTheme.cardBg(context),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.grey200),
+                              border: Border.all(color: AppTheme.border(context)),
                             ),
                             child: Material(
                               color: Colors.transparent,
@@ -519,13 +531,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                         width: 44,
                                         height: 44,
                                         decoration: BoxDecoration(
-                                          color: AppTheme.grey100,
+                                          color: AppTheme.subtleBg(context),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Icon(
                                           iconData,
                                           size: 22,
-                                          color: AppTheme.black,
+                                          color: AppTheme.textPrimary(context),
                                         ),
                                       ),
                                       const SizedBox(width: 14),
@@ -541,8 +553,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
                                                 color: category.isArchived
-                                                    ? AppTheme.grey600
-                                                    : AppTheme.black,
+                                                    ? AppTheme.textMuted(context)
+                                                    : AppTheme.textPrimary(context),
                                                 decoration: category.isArchived
                                                     ? TextDecoration.lineThrough
                                                     : null,
@@ -557,19 +569,17 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                                     vertical: 2,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: category.type == CategoryType.expense
-                                                        ? AppTheme.grey100
-                                                        : AppTheme.grey100,
+                                                    color: AppTheme.subtleBg(context),
                                                     borderRadius: BorderRadius.circular(6),
                                                   ),
                                                   child: Text(
                                                     category.type == CategoryType.expense
                                                         ? 'Pengeluaran'
                                                         : 'Pemasukan',
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.w600,
-                                                      color: AppTheme.grey800,
+                                                      color: AppTheme.textSecondary(context),
                                                     ),
                                                   ),
                                                 ),
@@ -581,15 +591,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                                       vertical: 2,
                                                     ),
                                                     decoration: BoxDecoration(
-                                                      color: AppTheme.grey200,
+                                                      color: AppTheme.subtleBg(context),
                                                       borderRadius: BorderRadius.circular(6),
                                                     ),
-                                                    child: const Text(
+                                                    child: Text(
                                                       'Diarsipkan',
                                                       style: TextStyle(
                                                         fontSize: 10,
                                                         fontWeight: FontWeight.w500,
-                                                        color: AppTheme.grey600,
+                                                        color: AppTheme.textMuted(context),
                                                       ),
                                                     ),
                                                   ),
@@ -601,10 +611,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                       ),
 
                                       // Action Icon
-                                      const Icon(
+                                      Icon(
                                         Icons.more_vert_rounded,
                                         size: 20,
-                                        color: AppTheme.grey600,
+                                        color: AppTheme.textSecondary(context),
                                       ),
                                     ],
                                   ),
@@ -639,20 +649,21 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.white : Colors.transparent,
+          color: selected ? AppTheme.cardBg(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: selected
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x10000000),
+                    color: isDark ? const Color(0x20000000) : const Color(0x10000000),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ]
               : null,
@@ -662,7 +673,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppTheme.black : AppTheme.grey600,
+            color: selected ? AppTheme.textPrimary(context) : AppTheme.textSecondary(context),
           ),
         ),
       ),
@@ -690,10 +701,10 @@ class _TypeFilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.black : AppTheme.grey100,
+          color: selected ? AppTheme.primaryButtonBg(context) : AppTheme.subtleBg(context),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppTheme.black : AppTheme.grey200,
+            color: selected ? AppTheme.primaryButtonBg(context) : AppTheme.border(context),
           ),
         ),
         child: Text(
@@ -701,7 +712,7 @@ class _TypeFilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppTheme.white : AppTheme.grey800,
+            color: selected ? AppTheme.primaryButtonText(context) : AppTheme.textSecondary(context),
           ),
         ),
       ),
@@ -723,21 +734,21 @@ class _MiniStatBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.grey100,
+        color: AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.black),
+          Icon(icon, size: 14, color: AppTheme.textPrimary(context)),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
         ],

@@ -158,10 +158,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        color: AppTheme.black,
-        backgroundColor: AppTheme.white,
+        color: AppTheme.textPrimary(context),
+        backgroundColor: AppTheme.cardBg(context),
         onRefresh: () => ref.read(historyTransactionsProvider.notifier).refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -179,33 +179,33 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.grey100,
+                              color: AppTheme.chipBg(context),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: TextField(
                               controller: _searchController,
                               onChanged: _onSearchChanged,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: AppTheme.black,
+                                color: AppTheme.textPrimary(context),
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Cari catatan, kategori, dompet...',
-                                hintStyle: const TextStyle(
+                                hintStyle: TextStyle(
                                   fontSize: 13,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textMuted(context),
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.search_rounded,
                                   size: 20,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                 ),
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.clear_rounded,
                                           size: 18,
-                                          color: AppTheme.grey600,
+                                          color: AppTheme.textSecondary(context),
                                         ),
                                         onPressed: _clearSearch,
                                       )
@@ -229,8 +229,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: filter.hasActiveFilter
-                                  ? AppTheme.black
-                                  : AppTheme.grey100,
+                                  ? AppTheme.primaryButtonBg(context)
+                                  : AppTheme.chipBg(context),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Stack(
@@ -240,8 +240,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                   Icons.tune_rounded,
                                   size: 22,
                                   color: filter.hasActiveFilter
-                                      ? AppTheme.white
-                                      : AppTheme.black,
+                                      ? AppTheme.primaryButtonText(context)
+                                      : AppTheme.textPrimary(context),
                                 ),
                                 if (filter.hasActiveFilter)
                                   Positioned(
@@ -249,15 +249,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                     right: -4,
                                     child: Container(
                                       padding: const EdgeInsets.all(3),
-                                      decoration: const BoxDecoration(
-                                        color: AppTheme.white,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.cardBg(context),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Container(
                                         width: 6,
                                         height: 6,
-                                        decoration: const BoxDecoration(
-                                          color: AppTheme.black,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.textPrimary(context),
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -334,20 +334,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.grey100,
+                                  color: AppTheme.chipBg(context),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
                                     Icon(Icons.restart_alt_rounded,
-                                        size: 14, color: AppTheme.grey600),
-                                    SizedBox(width: 4),
+                                        size: 14, color: AppTheme.textSecondary(context)),
+                                    const SizedBox(width: 4),
                                     Text(
                                       'Reset',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: AppTheme.grey600,
+                                        color: AppTheme.textSecondary(context),
                                       ),
                                     ),
                                   ],
@@ -364,27 +364,27 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppTheme.white,
+                        color: AppTheme.cardBg(context),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.grey200),
+                        border: Border.all(color: AppTheme.border(context)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.receipt_long_outlined,
                                 size: 16,
-                                color: AppTheme.grey600,
+                                color: AppTheme.textSecondary(context),
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 '${summary.count} Transaksi',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.grey800,
+                                  color: AppTheme.textPrimary(context),
                                 ),
                               ),
                             ],
@@ -393,21 +393,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             children: [
                               Text(
                                 '+${CurrencyFormatter.format(summary.totalIncome)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.black,
+                                  color: AppTheme.textPrimary(context),
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Text('•', style: TextStyle(color: AppTheme.grey400)),
+                              Text('•', style: TextStyle(color: AppTheme.textMuted(context))),
                               const SizedBox(width: 8),
                               Text(
                                 '-${CurrencyFormatter.format(summary.totalExpense)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                 ),
                               ),
                             ],
@@ -423,13 +423,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
             // Transactions List
             transactionsAsync.when(
-              loading: () => const SliverToBoxAdapter(
+              loading: () => SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppTheme.black,
+                      color: AppTheme.textPrimary(context),
                     ),
                   ),
                 ),
@@ -440,7 +440,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   child: Center(
                     child: Text(
                       'Gagal memuat transaksi: $err',
-                      style: const TextStyle(color: AppTheme.grey600, fontSize: 13),
+                      style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 13),
                     ),
                   ),
                 ),
@@ -484,18 +484,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.calendar_today_outlined,
                                         size: 13,
-                                        color: AppTheme.grey600,
+                                        color: AppTheme.textSecondary(context),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         _formatDateHeader(dateKey),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: AppTheme.black,
+                                          color: AppTheme.textPrimary(context),
                                           letterSpacing: -0.2,
                                         ),
                                       ),
@@ -509,8 +509,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: dailyNet >= 0
-                                          ? AppTheme.black
-                                          : AppTheme.grey600,
+                                          ? AppTheme.textPrimary(context)
+                                          : AppTheme.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -569,10 +569,10 @@ class _QuickChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.black : AppTheme.white,
+          color: selected ? AppTheme.primaryButtonBg(context) : AppTheme.cardBg(context),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppTheme.black : AppTheme.grey200,
+            color: selected ? AppTheme.primaryButtonBg(context) : AppTheme.border(context),
           ),
         ),
         child: Text(
@@ -580,7 +580,7 @@ class _QuickChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? AppTheme.white : AppTheme.grey800,
+            color: selected ? AppTheme.primaryButtonText(context) : AppTheme.textPrimary(context),
           ),
         ),
       ),
@@ -602,28 +602,28 @@ class _RemovableChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 10, right: 4, top: 4, bottom: 4),
       decoration: BoxDecoration(
-        color: AppTheme.grey100,
+        color: AppTheme.chipBg(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(width: 4),
           InkWell(
             onTap: onRemove,
             borderRadius: BorderRadius.circular(12),
-            child: const Padding(
-              padding: EdgeInsets.all(2),
-              child: Icon(Icons.close_rounded, size: 14, color: AppTheme.grey600),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(Icons.close_rounded, size: 14, color: AppTheme.textSecondary(context)),
             ),
           ),
         ],
@@ -659,9 +659,9 @@ class _HistoryListItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -674,10 +674,10 @@ class _HistoryListItem extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.chipBg(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, size: 18, color: AppTheme.black),
+                child: Icon(icon, size: 18, color: AppTheme.textPrimary(context)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -686,10 +686,10 @@ class _HistoryListItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.black,
+                        color: AppTheme.textPrimary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -703,9 +703,9 @@ class _HistoryListItem extends StatelessWidget {
                         if (tx.type != TransactionType.transfer && tx.walletName != null)
                           Text(
                             tx.walletName!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -713,24 +713,24 @@ class _HistoryListItem extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppTheme.grey100,
+                              color: AppTheme.chipBg(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               tx.budgetName!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.grey800,
+                                color: AppTheme.textPrimary(context),
                               ),
                             ),
                           ),
                         if (tx.note != null && tx.note!.isNotEmpty)
                           Text(
                             '• "${tx.note!}"',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                               fontStyle: FontStyle.italic,
                             ),
                             maxLines: 1,
@@ -738,9 +738,9 @@ class _HistoryListItem extends StatelessWidget {
                           ),
                         Text(
                           '• ${DateFormatter.formatTime(tx.occurredAt)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.grey600,
+                            color: AppTheme.textSecondary(context),
                           ),
                         ),
                       ],
@@ -755,10 +755,10 @@ class _HistoryListItem extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: tx.type == TransactionType.income
-                      ? AppTheme.black
+                      ? AppTheme.textPrimary(context)
                       : tx.type == TransactionType.expense
-                          ? AppTheme.grey800
-                          : AppTheme.grey600,
+                          ? (AppTheme.isDark(context) ? const Color(0xFFD4D4D8) : AppTheme.grey800)
+                          : AppTheme.textSecondary(context),
                 ),
               ),
             ],
@@ -784,22 +784,22 @@ class _EmptyHistoryState extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: AppTheme.grey100,
+            decoration: BoxDecoration(
+              color: AppTheme.chipBg(context),
               shape: BoxShape.circle,
             ),
             child: Icon(
               hasFilter ? Icons.search_off_rounded : Icons.receipt_long_outlined,
               size: 32,
-              color: AppTheme.grey600,
+              color: AppTheme.textSecondary(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -807,10 +807,10 @@ class _EmptyHistoryState extends StatelessWidget {
             hasFilter
                 ? 'Tidak ada transaksi ditemukan'
                 : 'Belum ada riwayat transaksi',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -819,9 +819,9 @@ class _EmptyHistoryState extends StatelessWidget {
                 ? 'Coba sesuaikan kata kunci atau bersihkan filter yang aktif.'
                 : 'Catat pemasukan, pengeluaran, atau transfer untuk melihat riwayat di sini.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppTheme.grey600,
+              color: AppTheme.textSecondary(context),
             ),
           ),
           if (hasFilter) ...[
@@ -829,8 +829,8 @@ class _EmptyHistoryState extends StatelessWidget {
             OutlinedButton(
               onPressed: onResetFilter,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.black,
-                side: const BorderSide(color: AppTheme.black),
+                foregroundColor: AppTheme.textPrimary(context),
+                side: BorderSide(color: AppTheme.borderStrong(context)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -911,13 +911,19 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
       builder: (context, child) {
+        final isDark = AppTheme.isDark(context);
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.black,
-              onPrimary: AppTheme.white,
-              surface: AppTheme.white,
-              onSurface: AppTheme.black,
+            colorScheme: ColorScheme(
+              brightness: isDark ? Brightness.dark : Brightness.light,
+              primary: AppTheme.textPrimary(context),
+              onPrimary: AppTheme.bg(context),
+              surface: AppTheme.cardBg(context),
+              onSurface: AppTheme.textPrimary(context),
+              secondary: AppTheme.textPrimary(context),
+              onSecondary: AppTheme.bg(context),
+              error: Colors.red,
+              onError: AppTheme.white,
             ),
           ),
           child: child!,
@@ -955,9 +961,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-      decoration: const BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -969,7 +975,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.grey200,
+                color: AppTheme.border(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -980,12 +986,12 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Filter Transaksi',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               TextButton(
@@ -998,9 +1004,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                     _endDate = null;
                   });
                 },
-                child: const Text(
+                child: Text(
                   'Reset',
-                  style: TextStyle(color: AppTheme.grey600, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 13),
                 ),
               ),
             ],
@@ -1008,12 +1014,12 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           const SizedBox(height: 14),
 
           // Rentang Waktu
-          const Text(
+          Text(
             'Rentang Tanggal',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -1053,12 +1059,12 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           const SizedBox(height: 18),
 
           // Jenis Transaksi
-          const Text(
+          Text(
             'Jenis Transaksi',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -1090,12 +1096,12 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           const SizedBox(height: 18),
 
           // Dompet
-          const Text(
+          Text(
             'Dompet',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -1122,8 +1128,8 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           // Apply button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.black,
-              foregroundColor: AppTheme.white,
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1162,7 +1168,7 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.black : AppTheme.grey100,
+          color: selected ? AppTheme.primaryButtonBg(context) : AppTheme.chipBg(context),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -1170,7 +1176,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? AppTheme.white : AppTheme.black,
+            color: selected ? AppTheme.primaryButtonText(context) : AppTheme.textPrimary(context),
           ),
         ),
       ),

@@ -22,9 +22,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -35,7 +35,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.grey200,
+                  color: AppTheme.border(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -45,17 +45,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 budget.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: AppTheme.black),
-              title: const Text('Edit Kuota'),
+              leading: Icon(Icons.edit_outlined, color: AppTheme.textPrimary(context)),
+              title: Text('Edit Kuota', style: TextStyle(color: AppTheme.textPrimary(context))),
               onTap: () {
                 Navigator.pop(ctx);
                 BudgetFormSheet.show(context, budget: budget);
@@ -64,14 +64,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             ListTile(
               leading: Icon(
                 budget.isActive ? Icons.pause_circle_outline : Icons.play_circle_outline,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
-              title: Text(budget.isActive ? 'Nonaktifkan Kuota' : 'Aktifkan Kembali'),
+              title: Text(
+                budget.isActive ? 'Nonaktifkan Kuota' : 'Aktifkan Kembali',
+                style: TextStyle(color: AppTheme.textPrimary(context)),
+              ),
               subtitle: Text(
                 budget.isActive
                     ? 'Sembunyikan dari pilihan saat mencatat transaksi'
                     : 'Gunakan kembali kuota ini untuk pengeluaran',
-                style: const TextStyle(fontSize: 12, color: AppTheme.grey600),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary(context)),
               ),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -81,8 +84,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppTheme.black),
-              title: const Text('Hapus Kuota'),
+              leading: Icon(Icons.delete_outline, color: AppTheme.textPrimary(context)),
+              title: Text('Hapus Kuota', style: TextStyle(color: AppTheme.textPrimary(context))),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, budget);
@@ -98,23 +101,25 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.white,
-        title: const Text(
+        backgroundColor: AppTheme.cardBg(context),
+        title: Text(
           'Hapus Kuota?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
         ),
         content: Text(
           'Yakin ingin menghapus kuota "${budget.name}"? Riwayat transaksi lama yang pernah menggunakan kuota ini akan tetap tersimpan.',
+          style: TextStyle(color: AppTheme.textSecondary(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary(context)),
             child: const Text('Batal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.black,
-              foregroundColor: AppTheme.white,
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -137,10 +142,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         : 0.0;
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        color: AppTheme.black,
-        backgroundColor: AppTheme.white,
+        color: AppTheme.textPrimary(context),
+        backgroundColor: AppTheme.cardBg(context),
         onRefresh: () => ref.read(budgetsProvider.notifier).refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -155,34 +160,34 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        color: AppTheme.white,
+                        color: AppTheme.cardBg(context),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.black, width: 1.5),
-                        boxShadow: const [
+                        border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x08000000),
+                            color: AppTheme.isDark(context) ? const Color(0x20000000) : const Color(0x08000000),
                             blurRadius: 10,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.pie_chart_outline_rounded,
                                 size: 18,
-                                color: AppTheme.grey600,
+                                color: AppTheme.textSecondary(context),
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'Total Kuota Belanja Hari Ini',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -191,10 +196,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           const SizedBox(height: 10),
                           Text(
                             CurrencyFormatter.format(summary.totalLimit),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
-                              color: AppTheme.black,
+                              color: AppTheme.textPrimary(context),
                               letterSpacing: -1,
                             ),
                           ),
@@ -206,8 +211,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             child: LinearProgressIndicator(
                               value: globalProgress,
                               minHeight: 6,
-                              backgroundColor: AppTheme.grey200,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.black),
+                              backgroundColor: AppTheme.border(context),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.textPrimary(context)),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -218,9 +223,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             children: [
                               Text(
                                 'Terpakai: ${CurrencyFormatter.format(summary.totalSpent)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -231,7 +236,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: summary.remaining < 0 ? AppTheme.black : AppTheme.grey800,
+                                  color: AppTheme.textPrimary(context),
                                 ),
                               ),
                             ],
@@ -248,7 +253,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: AppTheme.grey100,
+                            color: AppTheme.chipBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -278,19 +283,19 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.black,
+                              color: AppTheme.primaryButtonBg(context),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(Icons.add_rounded, size: 16, color: AppTheme.white),
-                                SizedBox(width: 6),
+                                Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryButtonText(context)),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Tambah',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.white,
+                                    color: AppTheme.primaryButtonText(context),
                                   ),
                                 ),
                               ],
@@ -306,17 +311,20 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
             // List Kuota
             budgetsAsync.when(
-              loading: () => const SliverFillRemaining(
+              loading: () => SliverFillRemaining(
                 child: Center(
                   child: CircularProgressIndicator(
-                    color: AppTheme.black,
+                    color: AppTheme.textPrimary(context),
                     strokeWidth: 2,
                   ),
                 ),
               ),
               error: (err, stack) => SliverFillRemaining(
                 child: Center(
-                  child: Text('Gagal memuat kuota: $err'),
+                  child: Text(
+                    'Gagal memuat kuota: $err',
+                    style: TextStyle(color: AppTheme.textSecondary(context)),
+                  ),
                 ),
               ),
               data: (budgets) {
@@ -336,17 +344,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                 ? Icons.pause_circle_outline
                                 : Icons.pie_chart_outline_rounded,
                             size: 48,
-                            color: AppTheme.grey400,
+                            color: AppTheme.textMuted(context),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             _showInactive
                                 ? 'Tidak ada kuota nonaktif'
                                 : 'Belum ada kuota harian',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -354,9 +362,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             _showInactive
                                 ? 'Kuota yang dinonaktifkan akan muncul di sini'
                                 : 'Buat batas kuota harian (misal: Makan Rp50.000) untuk membatasi pengeluaran',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.grey400,
+                              color: AppTheme.textMuted(context),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -376,12 +384,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: AppTheme.white,
+                            color: AppTheme.cardBg(context),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: budget.isOverBudget
-                                  ? AppTheme.black
-                                  : AppTheme.grey200,
+                                  ? AppTheme.borderStrong(context)
+                                  : AppTheme.border(context),
                               width: budget.isOverBudget ? 1.5 : 1.0,
                             ),
                           ),
@@ -400,12 +408,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: AppTheme.grey100,
+                                          color: AppTheme.chipBg(context),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.donut_small_rounded,
-                                          color: AppTheme.black,
+                                          color: AppTheme.textPrimary(context),
                                           size: 20,
                                         ),
                                       ),
@@ -418,18 +426,18 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                           children: [
                                             Text(
                                               budget.name,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppTheme.black,
+                                                color: AppTheme.textPrimary(context),
                                               ),
                                             ),
                                             const SizedBox(height: 3),
                                             Text(
                                               '${CurrencyFormatter.format(budget.dailyLimit)} / hari',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: AppTheme.grey600,
+                                                color: AppTheme.textSecondary(context),
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -445,24 +453,24 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.black,
+                                            color: AppTheme.borderStrong(context),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'LEBIH KUOTA',
                                             style: TextStyle(
                                               fontSize: 9,
                                               fontWeight: FontWeight.w800,
-                                              color: AppTheme.white,
+                                              color: AppTheme.primaryButtonText(context),
                                               letterSpacing: 0.5,
                                             ),
                                           ),
                                         ),
                                       const SizedBox(width: 4),
-                                      const Icon(
+                                      Icon(
                                         Icons.more_vert_rounded,
                                         size: 18,
-                                        color: AppTheme.grey400,
+                                        color: AppTheme.textMuted(context),
                                       ),
                                     ],
                                   ),
@@ -474,9 +482,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                     child: LinearProgressIndicator(
                                       value: budget.percentage,
                                       minHeight: 5,
-                                      backgroundColor: AppTheme.grey200,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(
-                                        AppTheme.black,
+                                      backgroundColor: AppTheme.border(context),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppTheme.textPrimary(context),
                                       ),
                                     ),
                                   ),
@@ -488,9 +496,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                     children: [
                                       Text(
                                         'Terpakai: ${CurrencyFormatter.format(budget.spent)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: AppTheme.grey600,
+                                          color: AppTheme.textSecondary(context),
                                         ),
                                       ),
                                       Text(
@@ -500,9 +508,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: budget.isOverBudget
-                                              ? AppTheme.black
-                                              : AppTheme.grey800,
+                                          color: AppTheme.textPrimary(context),
                                         ),
                                       ),
                                     ],
@@ -545,14 +551,14 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.white : Colors.transparent,
+          color: selected ? AppTheme.cardBg(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: selected
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x0A000000),
+                    color: AppTheme.isDark(context) ? const Color(0x30000000) : const Color(0x0A000000),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ]
               : null,
@@ -562,7 +568,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppTheme.black : AppTheme.grey600,
+            color: selected ? AppTheme.textPrimary(context) : AppTheme.textSecondary(context),
           ),
         ),
       ),

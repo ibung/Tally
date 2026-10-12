@@ -112,9 +112,9 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
         right: 20,
         bottom: bottomInset + 20,
       ),
-      decoration: const BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Form(
         key: _formKey,
@@ -130,7 +130,7 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.grey200,
+                    color: AppTheme.border(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -140,10 +140,10 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
               // Title
               Text(
                 isEdit ? 'Edit Kategori' : 'Tambah Kategori Baru',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                   letterSpacing: -0.5,
                 ),
               ),
@@ -153,7 +153,7 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -174,12 +174,12 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
               const SizedBox(height: 16),
 
               // Nama Kategori
-              const Text(
+              Text(
                 'Nama Kategori',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -200,12 +200,12 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
               const SizedBox(height: 16),
 
               // Pilihan Ikon
-              const Text(
+              Text(
                 'Pilih Ikon',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -228,17 +228,17 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.black : AppTheme.grey100,
+                          color: isSelected ? AppTheme.primaryButtonBg(context) : AppTheme.subtleBg(context),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? AppTheme.black : AppTheme.grey200,
+                            color: isSelected ? AppTheme.primaryButtonBg(context) : AppTheme.border(context),
                           ),
                         ),
                         child: Center(
                           child: Icon(
                             item.icon,
                             size: 22,
-                            color: isSelected ? AppTheme.white : AppTheme.black,
+                            color: isSelected ? AppTheme.primaryButtonText(context) : AppTheme.textPrimary(context),
                           ),
                         ),
                       ),
@@ -252,12 +252,12 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppTheme.white,
+                          color: AppTheme.primaryButtonText(context),
                         ),
                       )
                     : Text(
@@ -296,7 +296,7 @@ class _TypeTab extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.black : Colors.transparent,
+            color: isSelected ? AppTheme.primaryButtonBg(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -305,7 +305,7 @@ class _TypeTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? AppTheme.white : AppTheme.grey800,
+                color: isSelected ? AppTheme.primaryButtonText(context) : AppTheme.textSecondary(context),
               ),
             ),
           ),

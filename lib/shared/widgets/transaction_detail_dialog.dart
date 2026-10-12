@@ -53,24 +53,25 @@ class _TransactionDetailDialog extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.white,
+        backgroundColor: AppTheme.cardBg(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Hapus Transaksi?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
         ),
         content: Text(
           'Yakin ingin menghapus transaksi sebesar ${CurrencyFormatter.format(tx.amount)}?',
+          style: TextStyle(color: AppTheme.textSecondary(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.grey600)),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.black,
-              foregroundColor: AppTheme.white,
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
@@ -87,6 +88,8 @@ class _TransactionDetailDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = AppTheme.isDark(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -94,13 +97,14 @@ class _TransactionDetailDialog extends ConsumerWidget {
           color: Colors.transparent,
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.white,
+              color: AppTheme.cardBg(context),
               borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
+              border: Border.all(color: AppTheme.border(context)),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x1A000000),
+                  color: isDark ? const Color(0x33000000) : const Color(0x1A000000),
                   blurRadius: 32,
-                  offset: Offset(0, 12),
+                  offset: const Offset(0, 12),
                 ),
               ],
             ),
@@ -111,9 +115,9 @@ class _TransactionDetailDialog extends ConsumerWidget {
                 // ── Header band ──────────────────────────────────────
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.black,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1F1F1F) : AppTheme.black,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   child: Row(
                     children: [
@@ -227,8 +231,8 @@ class _TransactionDetailDialog extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.black,
-                            side: const BorderSide(color: AppTheme.grey200),
+                            foregroundColor: AppTheme.textPrimary(context),
+                            side: BorderSide(color: AppTheme.border(context)),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -246,8 +250,8 @@ class _TransactionDetailDialog extends ConsumerWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.black,
-                            foregroundColor: AppTheme.white,
+                            backgroundColor: AppTheme.primaryButtonBg(context),
+                            foregroundColor: AppTheme.primaryButtonText(context),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -292,15 +296,15 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 15, color: AppTheme.grey600),
+          Icon(icon, size: 15, color: AppTheme.textSecondary(context)),
           const SizedBox(width: 10),
           SizedBox(
             width: 105,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.grey600,
+                color: AppTheme.textSecondary(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -308,10 +312,10 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
             ),
           ),

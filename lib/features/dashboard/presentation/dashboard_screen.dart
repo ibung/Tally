@@ -49,13 +49,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
       builder: (context, child) {
+        final isDark = AppTheme.isDark(context);
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.black,
-              onPrimary: AppTheme.white,
-              surface: AppTheme.white,
-              onSurface: AppTheme.black,
+            colorScheme: ColorScheme(
+              brightness: isDark ? Brightness.dark : Brightness.light,
+              primary: AppTheme.textPrimary(context),
+              onPrimary: AppTheme.bg(context),
+              surface: AppTheme.cardBg(context),
+              onSurface: AppTheme.textPrimary(context),
+              secondary: AppTheme.textPrimary(context),
+              onSecondary: AppTheme.bg(context),
+              error: Colors.red,
+              onError: AppTheme.white,
             ),
           ),
           child: child!,
@@ -127,13 +133,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bg(context),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           TransactionFormSheet.show(context, date: selectedDate);
         },
-        backgroundColor: AppTheme.black,
-        foregroundColor: AppTheme.white,
+        backgroundColor: AppTheme.primaryButtonBg(context),
+        foregroundColor: AppTheme.primaryButtonText(context),
         elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         icon: const Icon(Icons.add_rounded, size: 22),
@@ -147,8 +153,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
       body: RefreshIndicator(
-        color: AppTheme.black,
-        backgroundColor: AppTheme.white,
+        color: AppTheme.textPrimary(context),
+        backgroundColor: AppTheme.cardBg(context),
         onRefresh: _refresh,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -196,12 +202,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Transaksi',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.black,
+                                color: AppTheme.textPrimary(context),
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -210,15 +216,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               data: (list) => Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.grey100,
+                                  color: AppTheme.chipBg(context),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   '${list.length}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.grey800,
+                                    color: AppTheme.textPrimary(context),
                                   ),
                                 ),
                               ),
@@ -228,10 +234,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         Text(
                           DateFormatter.formatRelative(selectedDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.grey600,
+                            color: AppTheme.textSecondary(context),
                           ),
                         ),
                       ],
@@ -244,13 +250,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             // Transactions List Slivers
             transactionsAsync.when(
-              loading: () => const SliverToBoxAdapter(
+              loading: () => SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppTheme.black,
+                      color: AppTheme.textPrimary(context),
                     ),
                   ),
                 ),
@@ -261,7 +267,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Center(
                     child: Text(
                       'Gagal memuat transaksi: $err',
-                      style: const TextStyle(color: AppTheme.grey600, fontSize: 13),
+                      style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 13),
                     ),
                   ),
                 ),
@@ -337,9 +343,9 @@ class _DateNavigator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: Row(
         children: [
@@ -347,7 +353,7 @@ class _DateNavigator extends StatelessWidget {
           IconButton(
             onPressed: onPrevious,
             icon: const Icon(Icons.chevron_left_rounded, size: 24),
-            color: AppTheme.black,
+            color: AppTheme.textPrimary(context),
             tooltip: 'Hari Sebelumnya',
             splashRadius: 20,
           ),
@@ -362,19 +368,19 @@ class _DateNavigator extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 15,
-                      color: AppTheme.grey600,
+                      color: AppTheme.textSecondary(context),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         '$relativeLabel • $fullDateLabel',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.black,
+                          color: AppTheme.textPrimary(context),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -389,7 +395,7 @@ class _DateNavigator extends StatelessWidget {
           IconButton(
             onPressed: onNext,
             icon: const Icon(Icons.chevron_right_rounded, size: 24),
-            color: AppTheme.black,
+            color: AppTheme.textPrimary(context),
             tooltip: 'Hari Berikutnya',
             splashRadius: 20,
           ),
@@ -399,7 +405,7 @@ class _DateNavigator extends StatelessWidget {
             Container(
               height: 24,
               width: 1,
-              color: AppTheme.grey200,
+              color: AppTheme.border(context),
               margin: const EdgeInsets.symmetric(horizontal: 4),
             ),
             InkWell(
@@ -408,19 +414,19 @@ class _DateNavigator extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.chipBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.today_rounded, size: 14, color: AppTheme.black),
-                    SizedBox(width: 4),
+                    Icon(Icons.today_rounded, size: 14, color: AppTheme.textPrimary(context)),
+                    const SizedBox(width: 4),
                     Text(
                       'Hari Ini',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.black,
+                        color: AppTheme.textPrimary(context),
                       ),
                     ),
                   ],
@@ -449,14 +455,14 @@ class _HistoricalBalanceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.black, width: 1.5),
-        boxShadow: const [
+        border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: AppTheme.isDark(context) ? const Color(0x20000000) : const Color(0x06000000),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -466,20 +472,20 @@ class _HistoricalBalanceCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.account_balance_wallet_rounded,
                     size: 16,
-                    color: AppTheme.grey600,
+                    color: AppTheme.textSecondary(context),
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
                     'Saldo Akhir Historis',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.grey600,
+                      color: AppTheme.textSecondary(context),
                       letterSpacing: 0.1,
                     ),
                   ),
@@ -488,15 +494,15 @@ class _HistoricalBalanceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.chipBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   DateFormatter.formatDate(selectedDate),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.grey800,
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
               ),
@@ -504,38 +510,38 @@ class _HistoricalBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           balanceAsync.when(
-            loading: () => const Text(
+            loading: () => Text(
               'Memuat...',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
             ),
-            error: (_, __) => const Text(
+            error: (_, __) => Text(
               'Rp -',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
             ),
             data: (balance) => Text(
               CurrencyFormatter.format(balance),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
                 letterSpacing: -1,
               ),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Posisi saldo seluruh dompet aktif di akhir tanggal ini',
             style: TextStyle(
               fontSize: 11,
-              color: AppTheme.grey600,
+              color: AppTheme.textSecondary(context),
             ),
           ),
         ],
@@ -555,7 +561,7 @@ class _DailyCashFlowCard extends StatelessWidget {
       loading: () => Container(
         height: 80,
         decoration: BoxDecoration(
-          color: AppTheme.grey100,
+          color: AppTheme.chipBg(context),
           borderRadius: BorderRadius.circular(16),
         ),
       ),
@@ -566,9 +572,9 @@ class _DailyCashFlowCard extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.white,
+            color: AppTheme.cardBg(context),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppTheme.grey200),
+            border: Border.all(color: AppTheme.border(context)),
           ),
           child: Column(
             children: [
@@ -581,13 +587,13 @@ class _DailyCashFlowCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppTheme.grey100,
+                            color: AppTheme.chipBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_downward_rounded,
                             size: 16,
-                            color: AppTheme.black,
+                            color: AppTheme.textPrimary(context),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -595,21 +601,21 @@ class _DailyCashFlowCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Pemasukan',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '+${CurrencyFormatter.format(summary.income)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
-                                  color: AppTheme.black,
+                                  color: AppTheme.textPrimary(context),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -623,7 +629,7 @@ class _DailyCashFlowCard extends StatelessWidget {
                   Container(
                     height: 36,
                     width: 1,
-                    color: AppTheme.grey200,
+                    color: AppTheme.border(context),
                     margin: const EdgeInsets.symmetric(horizontal: 10),
                   ),
 
@@ -634,13 +640,13 @@ class _DailyCashFlowCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppTheme.grey100,
+                            color: AppTheme.chipBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_upward_rounded,
                             size: 16,
-                            color: AppTheme.grey800,
+                            color: AppTheme.textPrimary(context),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -648,21 +654,21 @@ class _DailyCashFlowCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Pengeluaran',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '-${CurrencyFormatter.format(summary.expense)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
-                                  color: AppTheme.grey800,
+                                  color: AppTheme.textPrimary(context),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -677,16 +683,16 @@ class _DailyCashFlowCard extends StatelessWidget {
 
               if (summary.income > 0 || summary.expense > 0) ...[
                 const SizedBox(height: 12),
-                const Divider(color: AppTheme.grey200, height: 1),
+                Divider(color: AppTheme.border(context), height: 1),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Arus Kas Bersih',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.grey600,
+                        color: AppTheme.textSecondary(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -697,7 +703,7 @@ class _DailyCashFlowCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: net >= 0 ? AppTheme.black : AppTheme.grey800,
+                        color: AppTheme.textPrimary(context),
                       ),
                     ),
                   ],
@@ -726,7 +732,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
       loading: () => Container(
         height: 70,
         decoration: BoxDecoration(
-          color: AppTheme.grey100,
+          color: AppTheme.chipBg(context),
           borderRadius: BorderRadius.circular(18),
         ),
       ),
@@ -738,23 +744,24 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppTheme.grey100,
+              color: AppTheme.cardBg(context),
               borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppTheme.border(context)),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.pie_chart_outline_rounded,
                   size: 20,
-                  color: AppTheme.grey600,
+                  color: AppTheme.textSecondary(context),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Belum ada kuota harian aktif',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.grey600,
+                      color: AppTheme.textSecondary(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -762,7 +769,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                 TextButton(
                   onPressed: () => context.go('/budgets'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.black,
+                    foregroundColor: AppTheme.textPrimary(context),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   ),
                   child: const Text(
@@ -787,10 +794,10 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.white,
+              color: AppTheme.cardBg(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isOver ? AppTheme.black : AppTheme.grey200,
+                color: isOver ? AppTheme.borderStrong(context) : AppTheme.border(context),
                 width: isOver ? 1.5 : 1,
               ),
             ),
@@ -802,52 +809,52 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.pie_chart_outline_rounded,
                           size: 16,
-                          color: AppTheme.black,
+                          color: AppTheme.textPrimary(context),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Kuota Harian',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.black,
+                            color: AppTheme.textPrimary(context),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppTheme.grey100,
+                            color: AppTheme.chipBg(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '${activeBudgets.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.grey800,
+                              color: AppTheme.textPrimary(context),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const Row(
+                    Row(
                       children: [
                         Text(
                           'Lihat Semua',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.grey600,
+                            color: AppTheme.textSecondary(context),
                           ),
                         ),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 16,
-                          color: AppTheme.grey600,
+                          color: AppTheme.textSecondary(context),
                         ),
                       ],
                     ),
@@ -861,8 +868,8 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 6,
-                    backgroundColor: AppTheme.grey200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.black),
+                    backgroundColor: AppTheme.border(context),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.textPrimary(context)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -873,9 +880,9 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                   children: [
                     Text(
                       'Terpakai: ${CurrencyFormatter.format(totalSpent)} / ${CurrencyFormatter.format(totalLimit)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.grey600,
+                        color: AppTheme.textSecondary(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -886,7 +893,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: isOver ? AppTheme.black : AppTheme.grey800,
+                        color: AppTheme.textPrimary(context),
                       ),
                     ),
                   ],
@@ -898,24 +905,24 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.grey100,
+                      color: AppTheme.chipBg(context),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline_rounded,
                           size: 14,
-                          color: AppTheme.black,
+                          color: AppTheme.textPrimary(context),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             'Pengeluaran hari ini melewati kuota sebesar ${CurrencyFormatter.format(remaining.abs())}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.black,
+                              color: AppTheme.textPrimary(context),
                             ),
                           ),
                         ),
@@ -947,49 +954,49 @@ class _EmptyTransactionsState extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: AppTheme.grey100,
+            decoration: BoxDecoration(
+              color: AppTheme.chipBg(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.receipt_long_outlined,
               size: 32,
-              color: AppTheme.grey600,
+              color: AppTheme.textSecondary(context),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Belum ada transaksi',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.black,
+              color: AppTheme.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Tidak ada catatan keuangan pada ${DateFormatter.formatDate(selectedDate)}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppTheme.grey600,
+              color: AppTheme.textSecondary(context),
             ),
           ),
           const SizedBox(height: 18),
           OutlinedButton.icon(
             onPressed: onAddTap,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.black,
-              side: const BorderSide(color: AppTheme.black),
+              foregroundColor: AppTheme.textPrimary(context),
+              side: BorderSide(color: AppTheme.borderStrong(context)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -1034,9 +1041,9 @@ class _TransactionListItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.grey200),
+        border: Border.all(color: AppTheme.border(context)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -1050,13 +1057,13 @@ class _TransactionListItem extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.chipBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1068,10 +1075,10 @@ class _TransactionListItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.black,
+                        color: AppTheme.textPrimary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1085,9 +1092,9 @@ class _TransactionListItem extends StatelessWidget {
                         if (tx.type != TransactionType.transfer && tx.walletName != null)
                           Text(
                             tx.walletName!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1095,24 +1102,24 @@ class _TransactionListItem extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppTheme.grey100,
+                              color: AppTheme.chipBg(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               tx.budgetName!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.grey800,
+                                color: AppTheme.textPrimary(context),
                               ),
                             ),
                           ),
                         if (tx.note != null && tx.note!.isNotEmpty)
                           Text(
                             '• "${tx.note!}"',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                               fontStyle: FontStyle.italic,
                             ),
                             maxLines: 1,
@@ -1120,9 +1127,9 @@ class _TransactionListItem extends StatelessWidget {
                           ),
                         Text(
                           '• ${DateFormatter.formatTime(tx.occurredAt)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.grey600,
+                            color: AppTheme.textSecondary(context),
                           ),
                         ),
                       ],
@@ -1140,10 +1147,10 @@ class _TransactionListItem extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.3,
                   color: tx.type == TransactionType.income
-                      ? AppTheme.black
+                      ? AppTheme.textPrimary(context)
                       : tx.type == TransactionType.expense
-                          ? AppTheme.grey800
-                          : AppTheme.grey600,
+                          ? (AppTheme.isDark(context) ? const Color(0xFFD4D4D8) : AppTheme.grey800)
+                          : AppTheme.textSecondary(context),
                 ),
               ),
             ],

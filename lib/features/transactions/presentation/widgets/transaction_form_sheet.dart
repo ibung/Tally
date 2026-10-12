@@ -102,14 +102,23 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       initialDate: _selectedDateTime,
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
-      builder: (context, child) {
+      builder: (pickerCtx, child) {
+        final isDark = AppTheme.isDark(pickerCtx);
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.black,
-              onPrimary: AppTheme.white,
-              onSurface: AppTheme.black,
-            ),
+          data: Theme.of(pickerCtx).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppTheme.white,
+                    onPrimary: AppTheme.black,
+                    surface: AppTheme.darkCard,
+                    onSurface: AppTheme.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppTheme.black,
+                    onPrimary: AppTheme.white,
+                    surface: AppTheme.white,
+                    onSurface: AppTheme.black,
+                  ),
           ),
           child: child!,
         );
@@ -121,14 +130,23 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
-      builder: (context, child) {
+      builder: (pickerCtx, child) {
+        final isDark = AppTheme.isDark(pickerCtx);
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.black,
-              onPrimary: AppTheme.white,
-              onSurface: AppTheme.black,
-            ),
+          data: Theme.of(pickerCtx).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppTheme.white,
+                    onPrimary: AppTheme.black,
+                    surface: AppTheme.darkCard,
+                    onSurface: AppTheme.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppTheme.black,
+                    onPrimary: AppTheme.white,
+                    surface: AppTheme.white,
+                    onSurface: AppTheme.black,
+                  ),
           ),
           child: child!,
         );
@@ -279,9 +297,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         right: 20,
         bottom: bottomInset + 20,
       ),
-      decoration: const BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Form(
         key: _formKey,
@@ -297,7 +315,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.grey200,
+                    color: AppTheme.border(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -307,10 +325,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               // Title
               Text(
                 isEdit ? 'Edit Transaksi' : 'Catat Transaksi',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                   letterSpacing: -0.5,
                 ),
               ),
@@ -320,7 +338,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -357,12 +375,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               const SizedBox(height: 16),
 
               // Nominal Input (Besar & Prominen)
-              const Text(
+              Text(
                 'Nominal (Rp)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -371,10 +389,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: _onAmountChanged,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
                 decoration: const InputDecoration(
                   hintText: 'Rp 0',
@@ -388,21 +406,21 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.grey100,
+                    color: AppTheme.subtleBg(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.black, width: 1.5),
+                    border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, size: 20, color: AppTheme.black),
+                      Icon(Icons.warning_amber_rounded, size: 20, color: AppTheme.textPrimary(context)),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Nominal ini melebihi sisa kuota "${selectedBudget.name}" (${CurrencyFormatter.format(selectedBudget.remaining)}). Transaksi tetap dapat disimpan.',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.black,
+                            color: AppTheme.textPrimary(context),
                             height: 1.3,
                           ),
                         ),
@@ -415,12 +433,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
               // Wallet Selector (Income / Expense)
               if (_selectedType != TransactionType.transfer) ...[
-                const Text(
+                Text(
                   'Dompet',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.black,
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -442,9 +460,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
               // Transfer: Source & Destination Wallets
               if (_selectedType == TransactionType.transfer) ...[
-                const Text(
+                Text(
                   'Dari Dompet (Sumber)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.black),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary(context)),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
@@ -459,9 +477,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
+                Text(
                   'Ke Dompet (Tujuan)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.black),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary(context)),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
@@ -479,12 +497,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
               // Kuota Harian (Khusus Pengeluaran, PRD Bab 7)
               if (_selectedType == TransactionType.expense && budgets.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Kuota Harian (Opsional)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.black,
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -512,12 +530,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
               // Kategori (Khusus Income / Expense)
               if (_selectedType != TransactionType.transfer && categories.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Kategori (Opsional)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.black,
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -544,12 +562,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               ],
 
               // Tanggal & Waktu
-              const Text(
+              Text(
                 'Tanggal & Waktu Transaksi',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -559,24 +577,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.grey100,
+                    color: AppTheme.inputBg(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.grey200),
+                    border: Border.all(color: AppTheme.border(context)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.black),
+                      Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.textPrimary(context)),
                       const SizedBox(width: 12),
                       Text(
                         DateFormatter.formatDateTime(_selectedDateTime),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.black,
+                          color: AppTheme.textPrimary(context),
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.arrow_drop_down_rounded, color: AppTheme.grey600),
+                      Icon(Icons.arrow_drop_down_rounded, color: AppTheme.textSecondary(context)),
                     ],
                   ),
                 ),
@@ -584,12 +602,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               const SizedBox(height: 14),
 
               // Catatan (Opsional)
-              const Text(
+              Text(
                 'Catatan (Opsional)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -607,12 +625,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppTheme.white,
+                          color: AppTheme.primaryButtonText(context),
                         ),
                       )
                     : Text(
@@ -651,7 +669,7 @@ class _TypeTab extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.black : Colors.transparent,
+            color: isSelected ? AppTheme.primaryButtonBg(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -660,7 +678,7 @@ class _TypeTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? AppTheme.white : AppTheme.grey800,
+                color: isSelected ? AppTheme.primaryButtonText(context) : AppTheme.textSecondary(context),
               ),
             ),
           ),

@@ -48,9 +48,9 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -61,7 +61,7 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.grey200,
+                  color: AppTheme.border(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -71,17 +71,17 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 wallet.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: AppTheme.black),
-              title: const Text('Edit Dompet'),
+              leading: Icon(Icons.edit_outlined, color: AppTheme.textPrimary(context)),
+              title: Text('Edit Dompet', style: TextStyle(color: AppTheme.textPrimary(context))),
               onTap: () {
                 Navigator.pop(ctx);
                 WalletFormSheet.show(context, wallet: wallet);
@@ -90,14 +90,17 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
             ListTile(
               leading: Icon(
                 wallet.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-                color: AppTheme.black,
+                color: AppTheme.textPrimary(context),
               ),
-              title: Text(wallet.isArchived ? 'Pulihkan Dompet' : 'Arsipkan Dompet'),
+              title: Text(
+                wallet.isArchived ? 'Pulihkan Dompet' : 'Arsipkan Dompet',
+                style: TextStyle(color: AppTheme.textPrimary(context)),
+              ),
               subtitle: Text(
                 wallet.isArchived
                     ? 'Kembalikan dompet ke daftar aktif'
                     : 'Sembunyikan dompet dari transaksi baru',
-                style: const TextStyle(fontSize: 12, color: AppTheme.grey600),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary(context)),
               ),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -107,8 +110,8 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppTheme.black),
-              title: const Text('Hapus Dompet'),
+              leading: Icon(Icons.delete_outline, color: AppTheme.textPrimary(context)),
+              title: Text('Hapus Dompet', style: TextStyle(color: AppTheme.textPrimary(context))),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, wallet);
@@ -124,23 +127,25 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.white,
-        title: const Text(
+        backgroundColor: AppTheme.cardBg(context),
+        title: Text(
           'Hapus Dompet?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
         ),
         content: Text(
           'Yakin ingin menghapus "${wallet.name}"? Jika dompet memiliki riwayat transaksi, disarankan untuk mengarsipkannya saja.',
+          style: TextStyle(color: AppTheme.textSecondary(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary(context)),
             child: const Text('Batal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.black,
-              foregroundColor: AppTheme.white,
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -159,10 +164,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
     final totalBalance = ref.watch(totalActiveBalanceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        color: AppTheme.black,
-        backgroundColor: AppTheme.white,
+        color: AppTheme.textPrimary(context),
+        backgroundColor: AppTheme.cardBg(context),
         onRefresh: () => ref.read(walletsProvider.notifier).refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -177,34 +182,34 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        color: AppTheme.white,
+                        color: AppTheme.cardBg(context),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.black, width: 1.5),
-                        boxShadow: const [
+                        border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x08000000),
+                            color: AppTheme.isDark(context) ? const Color(0x20000000) : const Color(0x08000000),
                             blurRadius: 10,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.account_balance_wallet_rounded,
                                 size: 18,
-                                color: AppTheme.grey600,
+                                color: AppTheme.textSecondary(context),
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'Total Saldo Saat Ini',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.grey600,
+                                  color: AppTheme.textSecondary(context),
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -213,10 +218,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                           const SizedBox(height: 10),
                           Text(
                             CurrencyFormatter.format(totalBalance),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
-                              color: AppTheme.black,
+                              color: AppTheme.textPrimary(context),
                               letterSpacing: -1,
                             ),
                           ),
@@ -232,7 +237,7 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: AppTheme.grey100,
+                            color: AppTheme.chipBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -262,19 +267,19 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.black,
+                              color: AppTheme.primaryButtonBg(context),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(Icons.add_rounded, size: 16, color: AppTheme.white),
-                                SizedBox(width: 6),
+                                Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryButtonText(context)),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Tambah',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.white,
+                                    color: AppTheme.primaryButtonText(context),
                                   ),
                                 ),
                               ],
@@ -290,17 +295,20 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
 
             // List Dompet
             walletsAsync.when(
-              loading: () => const SliverFillRemaining(
+              loading: () => SliverFillRemaining(
                 child: Center(
                   child: CircularProgressIndicator(
-                    color: AppTheme.black,
+                    color: AppTheme.textPrimary(context),
                     strokeWidth: 2,
                   ),
                 ),
               ),
               error: (err, stack) => SliverFillRemaining(
                 child: Center(
-                  child: Text('Gagal memuat dompet: $err'),
+                  child: Text(
+                    'Gagal memuat dompet: $err',
+                    style: TextStyle(color: AppTheme.textSecondary(context)),
+                  ),
                 ),
               ),
               data: (wallets) {
@@ -320,17 +328,17 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                                 ? Icons.inventory_2_outlined
                                 : Icons.account_balance_wallet_outlined,
                             size: 48,
-                            color: AppTheme.grey400,
+                            color: AppTheme.textMuted(context),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             _showArchived
                                 ? 'Tidak ada dompet yang diarsipkan'
                                 : 'Belum ada dompet aktif',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.grey600,
+                              color: AppTheme.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -338,9 +346,9 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                             _showArchived
                                 ? 'Dompet yang diarsipkan akan muncul di sini'
                                 : 'Buat dompet pertama untuk mulai mencatat keuangan',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.grey400,
+                              color: AppTheme.textMuted(context),
                             ),
                           ),
                         ],
@@ -361,9 +369,9 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: AppTheme.white,
+                            color: AppTheme.cardBg(context),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.grey200),
+                            border: Border.all(color: AppTheme.border(context)),
                           ),
                           child: InkWell(
                             onTap: () => _showWalletOptions(context, wallet),
@@ -377,10 +385,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                                     width: 44,
                                     height: 44,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.grey100,
+                                      color: AppTheme.chipBg(context),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Icon(icon, color: AppTheme.black, size: 22),
+                                    child: Icon(icon, color: AppTheme.textPrimary(context), size: 22),
                                   ),
                                   const SizedBox(width: 14),
 
@@ -391,18 +399,18 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                                       children: [
                                         Text(
                                           wallet.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
-                                            color: AppTheme.black,
+                                            color: AppTheme.textPrimary(context),
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           typeLabel,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: AppTheme.grey600,
+                                            color: AppTheme.textSecondary(context),
                                           ),
                                         ),
                                       ],
@@ -418,19 +426,17 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
-                                          color: wallet.currentBalance < 0
-                                              ? AppTheme.black
-                                              : AppTheme.black,
+                                          color: AppTheme.textPrimary(context),
                                         ),
                                       ),
                                       if (wallet.isArchived)
-                                        const Padding(
-                                          padding: EdgeInsets.only(top: 2),
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
                                           child: Text(
                                             'Arsip',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: AppTheme.grey400,
+                                              color: AppTheme.textMuted(context),
                                               fontStyle: FontStyle.italic,
                                             ),
                                           ),
@@ -438,10 +444,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                                     ],
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(
+                                  Icon(
                                     Icons.more_vert_rounded,
                                     size: 18,
-                                    color: AppTheme.grey400,
+                                    color: AppTheme.textMuted(context),
                                   ),
                                 ],
                               ),
@@ -481,14 +487,14 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.white : Colors.transparent,
+          color: selected ? AppTheme.cardBg(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: selected
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x0A000000),
+                    color: AppTheme.isDark(context) ? const Color(0x30000000) : const Color(0x0A000000),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ]
               : null,
@@ -498,7 +504,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppTheme.black : AppTheme.grey600,
+            color: selected ? AppTheme.textPrimary(context) : AppTheme.textSecondary(context),
           ),
         ),
       ),

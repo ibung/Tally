@@ -112,9 +112,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
         right: 20,
         bottom: bottomInset + 24,
       ),
-      decoration: const BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Form(
         key: _formKey,
@@ -129,7 +129,7 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.grey200,
+                    color: AppTheme.border(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -139,22 +139,22 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               // Title
               Text(
                 isEdit ? 'Edit Kuota Harian' : 'Tambah Kuota Harian',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 20),
 
               // Nama Kuota
-              const Text(
+              Text(
                 'Nama Kuota',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -184,16 +184,16 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppTheme.grey100,
+                        color: AppTheme.subtleBg(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.grey200),
+                        border: Border.all(color: AppTheme.border(context)),
                       ),
                       child: Text(
                         suggestion,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.grey800,
+                          color: AppTheme.textSecondary(context),
                         ),
                       ),
                     ),
@@ -203,12 +203,12 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               const SizedBox(height: 20),
 
               // Batas Harian (Rp)
-              const Text(
+              Text(
                 'Batas Maksimal per Hari (Rp)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.black,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -234,25 +234,25 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey100,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.grey200),
+                  border: Border.all(color: AppTheme.border(context)),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.info_outline_rounded,
                       size: 16,
-                      color: AppTheme.grey800,
+                      color: AppTheme.textSecondary(context),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Kuota ini dihitung per hari tanpa rollover. Penggunaan akan otomatis direset ke 0 pada hari berikutnya.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppTheme.grey600,
+                          color: AppTheme.textSecondary(context),
                           height: 1.4,
                         ),
                       ),
@@ -266,12 +266,12 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppTheme.white,
+                          color: AppTheme.primaryButtonText(context),
                         ),
                       )
                     : Text(
