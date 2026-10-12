@@ -82,6 +82,10 @@ class TransactionModel {
     this.budgetName,
   });
 
+  /// Menandakan apakah transaksi ini merupakan transaksi penyesuaian/koreksi saldo manual
+  bool get isCorrection =>
+      note != null && note!.toLowerCase().contains('koreksi saldo');
+
   TransactionModel copyWith({
     String? id,
     TransactionType? type,

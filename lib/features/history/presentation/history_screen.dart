@@ -71,7 +71,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   IconData _getTransactionIcon(TransactionModel tx) {
-    if (tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo')) {
+    if (tx.isCorrection) {
       return Icons.tune_rounded;
     }
     if (tx.type == TransactionType.transfer) {
@@ -470,8 +470,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         final dateKey = dateKeys[index];
                         final items = grouped[dateKey]!;
 
-                        // Total net for this specific day
+                        // Total net for this specific day (koreksi saldo dikecualikan dari arus kas)
                         final dailyNet = items.fold<int>(0, (sum, tx) {
+                          if (tx.isCorrection) return sum;
                           if (tx.type == TransactionType.income) return sum + tx.amount;
                           if (tx.type == TransactionType.expense) return sum - tx.amount;
                           return sum;
@@ -654,7 +655,7 @@ class _HistoryListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCorrection = tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+    final isCorrection = tx.isCorrection;
     final title = isCorrection
         ? (tx.note ?? 'Koreksi Saldo')
         : tx.type == TransactionType.transfer

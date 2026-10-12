@@ -65,6 +65,7 @@ class BudgetRepository {
         SELECT COALESCE(SUM(amount), 0) as total
         FROM transactions
         WHERE budget_id = ? AND local_date = ? AND type = 'expense'
+          AND (note IS NULL OR LOWER(note) NOT LIKE '%koreksi saldo%')
       ''', [id, forLocalDate]);
       return (spentRes.first['total'] as num?)?.toInt() ?? 0;
     } else {
@@ -83,6 +84,7 @@ class BudgetRepository {
         SELECT COALESCE(SUM(amount), 0) as total
         FROM transactions
         WHERE budget_id = ? AND $dateFilter AND type = 'expense'
+          AND (note IS NULL OR LOWER(note) NOT LIKE '%koreksi saldo%')
       ''', args);
       return (spentRes.first['total'] as num?)?.toInt() ?? 0;
     }

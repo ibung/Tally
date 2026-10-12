@@ -107,6 +107,7 @@ final historySummaryProvider =
   int expense = 0;
 
   for (final tx in transactions) {
+    if (tx.isCorrection) continue;
     if (tx.type == TransactionType.income) {
       income += tx.amount;
     } else if (tx.type == TransactionType.expense) {

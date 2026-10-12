@@ -49,8 +49,7 @@ class _TransactionDetailDialog extends ConsumerWidget {
     };
   }
 
-  bool get _isCorrection =>
-      tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+  bool get _isCorrection => tx.isCorrection;
 
   void _confirmDelete(BuildContext dialogContext, WidgetRef ref) {
     showDialog(

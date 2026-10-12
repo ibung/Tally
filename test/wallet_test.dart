@@ -198,6 +198,7 @@ void main() {
       expect(tx.type, TransactionType.income);
       expect(tx.amount, 2200000 - 2185985);
       expect(tx.note, 'Koreksi Saldo');
+      expect(tx.isCorrection, true);
       expect(tx.walletId, walletId);
     });
 
@@ -230,6 +231,7 @@ void main() {
       expect(tx.type, TransactionType.expense);
       expect(tx.amount, 200000);
       expect(tx.note, 'Koreksi Saldo');
+      expect(tx.isCorrection, true);
       expect(tx.walletId, walletId);
     });
   });

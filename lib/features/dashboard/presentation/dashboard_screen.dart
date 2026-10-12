@@ -82,7 +82,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   IconData _getTransactionIcon(TransactionModel tx) {
-    if (tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo')) {
+    if (tx.isCorrection) {
       return Icons.tune_rounded;
     }
     if (tx.type == TransactionType.transfer) {
@@ -1030,7 +1030,7 @@ class _TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCorrection = tx.note != null && tx.note!.toLowerCase().contains('koreksi saldo');
+    final isCorrection = tx.isCorrection;
     final title = isCorrection
         ? (tx.note ?? 'Koreksi Saldo')
         : tx.type == TransactionType.transfer

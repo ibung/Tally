@@ -45,6 +45,9 @@ class TransactionRepository {
     if (type != null) {
       conditions.add('t.type = ?');
       args.add(type);
+      // Filter tipe spesifik (pemasukan / pengeluaran) tidak menyertakan koreksi saldo
+      conditions.add('(t.note IS NULL OR LOWER(t.note) NOT LIKE ?)');
+      args.add('%koreksi saldo%');
     }
     if (localDate != null) {
       conditions.add('t.local_date = ?');
@@ -107,7 +110,8 @@ class TransactionRepository {
     );
   }
 
-  /// Ringkasan pemasukan dan pengeluaran pada tanggal tertentu (localDate: YYYY-MM-DD)
+  /// Ringkasan pemasukan dan pengeluaran operasional pada tanggal tertentu (localDate: YYYY-MM-DD).
+  /// Koreksi saldo sengaja dikecualikan dari arus kas masuk/keluar agar tidak mendistorsi catatan keuangan.
   Future<({int income, int expense})> getDailySummary(String localDate) async {
     final database = await _db.database;
     final result = await database.rawQuery('''
@@ -116,7 +120,9 @@ class TransactionRepository {
         COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expense
       FROM transactions t
       LEFT JOIN wallets w ON t.wallet_id = w.id
-      WHERE t.local_date = ? AND (w.id IS NULL OR w.is_archived = 0)
+      WHERE t.local_date = ? 
+        AND (w.id IS NULL OR w.is_archived = 0)
+        AND (t.note IS NULL OR LOWER(t.note) NOT LIKE '%koreksi saldo%')
     ''', [localDate]);
 
     return (
@@ -132,6 +138,7 @@ class TransactionRepository {
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
       WHERE budget_id = ? AND local_date = ? AND type = 'expense'
+        AND (note IS NULL OR LOWER(note) NOT LIKE '%koreksi saldo%')
     ''', [budgetId, localDate]);
 
     return (result.first['total'] as num?)?.toInt() ?? 0;

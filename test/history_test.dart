@@ -39,7 +39,7 @@ class FakeHistoryTransactionRepository implements TransactionRepository {
           .toList();
     }
     if (type != null) {
-      result = result.where((t) => t.type.value == type).toList();
+      result = result.where((t) => t.type.value == type && !t.isCorrection).toList();
     }
     if (localDate != null) {
       result = result.where((t) => t.localDate == localDate).toList();
@@ -236,6 +236,63 @@ void main() {
       expect(summary.count, 3);
       expect(summary.totalIncome, 500000);
       expect(summary.totalExpense, 200000);
+    });
+
+    test('Koreksi Saldo is included in history list and count but excluded from totalIncome and totalExpense', () async {
+      fakeRepo.addTx(TransactionModel(
+        id: 'tx-1',
+        type: TransactionType.income,
+        amount: 500000,
+        categoryName: 'Gaji',
+        occurredAt: DateTime(2026, 10, 10, 10, 0),
+        localDate: '2026-10-10',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      fakeRepo.addTx(TransactionModel(
+        id: 'tx-corr',
+        type: TransactionType.income,
+        amount: 200000,
+        note: 'Koreksi Saldo',
+        occurredAt: DateTime(2026, 10, 10, 11, 0),
+        localDate: '2026-10-10',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      fakeRepo.addTx(TransactionModel(
+        id: 'tx-2',
+        type: TransactionType.expense,
+        amount: 150000,
+        occurredAt: DateTime(2026, 10, 10, 12, 0),
+        localDate: '2026-10-10',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          transactionRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
+      );
+
+      final list = await container.read(historyTransactionsProvider.future);
+      expect(list.length, 3);
+      expect(list.any((t) => t.isCorrection), true);
+
+      // Summary must count all 3 items, but totalIncome must only be 500000 (excluding 200000 correction)
+      final summary = container.read(historySummaryProvider);
+      expect(summary.count, 3);
+      expect(summary.totalIncome, 500000);
+      expect(summary.totalExpense, 150000);
+
+      // When filtered by TransactionType.income, Koreksi Saldo should NOT appear
+      container.read(historyFilterProvider.notifier).state =
+          const HistoryFilterState(type: TransactionType.income);
+      final incomeList = await container.read(historyTransactionsProvider.future);
+      expect(incomeList.length, 1);
+      expect(incomeList.first.id, 'tx-1');
     });
 
     test('Filtering by search query returns matching results', () async {

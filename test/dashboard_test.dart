@@ -41,7 +41,7 @@ class FakeTransactionRepository implements TransactionRepository {
           .toList();
     }
     if (type != null) {
-      result = result.where((t) => t.type.value == type).toList();
+      result = result.where((t) => t.type.value == type && !t.isCorrection).toList();
     }
     if (localDate != null) {
       result = result.where((t) => t.localDate == localDate).toList();
@@ -82,7 +82,7 @@ class FakeTransactionRepository implements TransactionRepository {
 
   @override
   Future<({int income, int expense})> getDailySummary(String localDate) async {
-    final daily = _transactions.where((t) => t.localDate == localDate);
+    final daily = _transactions.where((t) => t.localDate == localDate && !t.isCorrection);
     final income = daily
         .where((t) => t.type == TransactionType.income)
         .fold<int>(0, (sum, t) => sum + t.amount);
@@ -332,6 +332,54 @@ void main() {
       final summary = await fakeTxRepo.getDailySummary(dateA);
       expect(summary.income, 150000);
       expect(summary.expense, 40000);
+    });
+
+    test('Koreksi Saldo adjusts historical balance but is excluded from daily summary income and expense cashflow', () async {
+      const dateA = '2026-10-10';
+
+      // Koreksi saldo penambahan (balance correction up)
+      fakeTxRepo.addTx(TransactionModel(
+        id: 'tx-corr',
+        type: TransactionType.income,
+        amount: 250000,
+        note: 'Koreksi Saldo',
+        occurredAt: DateTime(2026, 10, 10, 8, 0),
+        localDate: dateA,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      // Regular income and expense
+      fakeTxRepo.addTx(TransactionModel(
+        id: 'tx-normal-inc',
+        type: TransactionType.income,
+        amount: 50000,
+        note: 'Gaji',
+        occurredAt: DateTime(2026, 10, 10, 10, 0),
+        localDate: dateA,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      fakeTxRepo.addTx(TransactionModel(
+        id: 'tx-normal-exp',
+        type: TransactionType.expense,
+        amount: 20000,
+        note: 'Makan',
+        occurredAt: DateTime(2026, 10, 10, 12, 0),
+        localDate: dateA,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      // Daily summary cashflow must NOT include the 250000 koreksi saldo
+      final summary = await fakeTxRepo.getDailySummary(dateA);
+      expect(summary.income, 50000);
+      expect(summary.expense, 20000);
+
+      // Historical balance MUST include the corrected funds (500000 opening + 250000 corr + 50000 inc - 20000 exp = 780000)
+      final balance = await fakeTxRepo.getHistoricalEndBalance(dateA);
+      expect(balance, 780000);
     });
   });
 
