@@ -37,6 +37,13 @@ class DatabaseHelper {
             AND wallet_id NOT IN (SELECT id FROM wallets)
             AND source_wallet_id IS NULL
         ''');
+
+        // Pastikan kolom period ada di tabel daily_budgets
+        final columns = await db.rawQuery('PRAGMA table_info(daily_budgets)');
+        final hasPeriod = columns.any((c) => c['name'] == 'period');
+        if (!hasPeriod) {
+          await db.execute("ALTER TABLE daily_budgets ADD COLUMN period TEXT NOT NULL DEFAULT 'daily'");
+        }
       },
     );
   }
@@ -71,7 +78,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // 3. Daily Budgets / Kuota Harian (PRD Bab 8)
+    // 3. Daily Budgets / Kuota (Harian, Mingguan, Bulanan)
     await db.execute('''
       CREATE TABLE daily_budgets (
         id TEXT PRIMARY KEY,
@@ -79,6 +86,7 @@ class DatabaseHelper {
         daily_limit INTEGER NOT NULL,
         start_date TEXT NOT NULL,
         end_date TEXT,
+        period TEXT NOT NULL DEFAULT 'daily',
         is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL

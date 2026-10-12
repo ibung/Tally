@@ -398,8 +398,8 @@ void main() {
       expect(find.text('Pemasukan'), findsOneWidget);
       expect(find.text('Pengeluaran'), findsOneWidget);
 
-      // Check Kuota Harian
-      expect(find.text('Kuota Harian'), findsOneWidget);
+      // Check Kuota Belanja
+      expect(find.text('Kuota Belanja'), findsOneWidget);
 
       // Check Transaction List
       expect(find.text('Transaksi'), findsOneWidget);

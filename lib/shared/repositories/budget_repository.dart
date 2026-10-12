@@ -24,12 +24,7 @@ class BudgetRepository {
       final id = map['id'] as String;
       int spent = 0;
       if (forLocalDate != null) {
-        final spentRes = await database.rawQuery('''
-          SELECT COALESCE(SUM(amount), 0) as total
-          FROM transactions
-          WHERE budget_id = ? AND local_date = ? AND type = 'expense'
-        ''', [id, forLocalDate]);
-        spent = (spentRes.first['total'] as num?)?.toInt() ?? 0;
+        spent = await _calculateSpent(database, id, map, forLocalDate);
       }
       list.add(DailyBudgetModel.fromMap(map, calculatedSpent: spent));
     }
@@ -47,15 +42,50 @@ class BudgetRepository {
 
     int spent = 0;
     if (forLocalDate != null) {
+      spent = await _calculateSpent(database, id, maps.first, forLocalDate);
+    }
+
+    return DailyBudgetModel.fromMap(maps.first, calculatedSpent: spent);
+  }
+
+  Future<int> _calculateSpent(
+    dynamic database,
+    String id,
+    Map<String, dynamic> map,
+    String forLocalDate,
+  ) async {
+    final periodStr = map['period'] as String? ?? 'daily';
+    final period = BudgetPeriod.fromString(periodStr);
+    final startDate = map['start_date'] as String? ?? forLocalDate;
+    final endDate = map['end_date'] as String?;
+
+    if (period == BudgetPeriod.daily) {
+      // Harian: Dihitung per hari untuk tanggal yang sedang dipantau (forLocalDate)
       final spentRes = await database.rawQuery('''
         SELECT COALESCE(SUM(amount), 0) as total
         FROM transactions
         WHERE budget_id = ? AND local_date = ? AND type = 'expense'
       ''', [id, forLocalDate]);
-      spent = (spentRes.first['total'] as num?)?.toInt() ?? 0;
-    }
+      return (spentRes.first['total'] as num?)?.toInt() ?? 0;
+    } else {
+      // Mingguan & Bulanan: Melacak transaksi pengeluaran dalam rentang tanggal kuota
+      List<dynamic> args;
+      String dateFilter;
+      if (endDate != null && endDate.isNotEmpty) {
+        dateFilter = 'local_date >= ? AND local_date <= ?';
+        args = [id, startDate, endDate];
+      } else {
+        dateFilter = 'local_date >= ?';
+        args = [id, startDate];
+      }
 
-    return DailyBudgetModel.fromMap(maps.first, calculatedSpent: spent);
+      final spentRes = await database.rawQuery('''
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM transactions
+        WHERE budget_id = ? AND $dateFilter AND type = 'expense'
+      ''', args);
+      return (spentRes.first['total'] as num?)?.toInt() ?? 0;
+    }
   }
 
   Future<int> insert(DailyBudgetModel budget) async {

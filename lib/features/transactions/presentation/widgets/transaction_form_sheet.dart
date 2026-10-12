@@ -444,13 +444,17 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedWalletId,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: wallets.map((w) {
                     return DropdownMenuItem(
                       value: w.id,
-                      child: Text('${w.name} (${CurrencyFormatter.format(w.currentBalance)})'),
+                      child: Text(
+                        '${w.name} (${CurrencyFormatter.format(w.currentBalance)})',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedWalletId = val),
@@ -467,11 +471,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedSourceWalletId,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: wallets.map((w) {
-                    return DropdownMenuItem(value: w.id, child: Text(w.name));
+                    return DropdownMenuItem(
+                      value: w.id,
+                      child: Text(w.name, overflow: TextOverflow.ellipsis),
+                    );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedSourceWalletId = val),
                 ),
@@ -484,21 +492,25 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedDestinationWalletId,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: wallets.map((w) {
-                    return DropdownMenuItem(value: w.id, child: Text(w.name));
+                    return DropdownMenuItem(
+                      value: w.id,
+                      child: Text(w.name, overflow: TextOverflow.ellipsis),
+                    );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedDestinationWalletId = val),
                 ),
                 const SizedBox(height: 14),
               ],
 
-              // Kuota Harian (Khusus Pengeluaran, PRD Bab 7)
+              // Kuota Belanja (Khusus Pengeluaran)
               if (_selectedType == TransactionType.expense && budgets.isNotEmpty) ...[
                 Text(
-                  'Kuota Harian (Opsional)',
+                  'Kuota Belanja (Opsional)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -508,18 +520,22 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String?>(
                   initialValue: _selectedBudgetId,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: [
                     const DropdownMenuItem(
                       value: null,
-                      child: Text('Tanpa Kuota'),
+                      child: Text('Tanpa Kuota', overflow: TextOverflow.ellipsis),
                     ),
                     ...budgets.map((b) {
                       return DropdownMenuItem(
                         value: b.id,
-                        child: Text('${b.name} (Sisa: ${CurrencyFormatter.format(b.remaining)})'),
+                        child: Text(
+                          '${b.name} (${b.period.label} • Sisa: ${CurrencyFormatter.format(b.remaining)})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       );
                     }),
                   ],
@@ -541,18 +557,19 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String?>(
                   initialValue: _selectedCategoryId,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: [
                     const DropdownMenuItem(
                       value: null,
-                      child: Text('Tanpa Kategori'),
+                      child: Text('Tanpa Kategori', overflow: TextOverflow.ellipsis),
                     ),
                     ...categories.map((c) {
                       return DropdownMenuItem(
                         value: c.id,
-                        child: Text(c.name),
+                        child: Text(c.name, overflow: TextOverflow.ellipsis),
                       );
                     }),
                   ],

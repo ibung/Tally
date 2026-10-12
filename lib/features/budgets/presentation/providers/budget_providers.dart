@@ -38,6 +38,7 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
   Future<void> createBudget({
     required String name,
     required int dailyLimit,
+    BudgetPeriod period = BudgetPeriod.daily,
     String? startDate,
     String? endDate,
   }) async {
@@ -51,6 +52,7 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
       dailyLimit: dailyLimit,
       startDate: defaultStartDate,
       endDate: endDate,
+      period: period,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -64,6 +66,7 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
     required String id,
     required String name,
     required int dailyLimit,
+    BudgetPeriod? period,
     String? startDate,
     String? endDate,
   }) async {
@@ -74,6 +77,7 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
     final updated = current.copyWith(
       name: name.trim(),
       dailyLimit: dailyLimit,
+      period: period ?? current.period,
       startDate: startDate ?? current.startDate,
       endDate: endDate,
       updatedAt: DateTime.now(),
@@ -100,7 +104,10 @@ final budgetsProvider = AsyncNotifierProvider<BudgetsNotifier, List<DailyBudgetM
   return BudgetsNotifier();
 });
 
-/// Ringkasan total kuota dan penggunaan hari ini dari seluruh kuota aktif
+/// Filter periode kuota yang dipilih pada tampilan (null = Semua)
+final selectedBudgetPeriodFilterProvider = StateProvider<BudgetPeriod?>((ref) => null);
+
+/// Ringkasan total kuota dan penggunaan dari seluruh kuota aktif (dapat disaring per periode jika diinginkan)
 final dailyBudgetSummaryProvider = Provider<({int totalLimit, int totalSpent, int remaining})>((ref) {
   final budgets = ref.watch(budgetsProvider).valueOrNull ?? [];
   final activeBudgets = budgets.where((b) => b.isActive).toList();

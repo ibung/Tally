@@ -147,5 +147,71 @@ void main() {
       expect(updated.name, 'Makan Siang & Malam');
       expect(updated.dailyLimit, 80000);
     });
+
+    test('Creating a weekly budget stores period and date range correctly', () async {
+      await container.read(budgetsProvider.notifier).createBudget(
+            name: 'Belanja Mingguan',
+            dailyLimit: 350000,
+            period: BudgetPeriod.weekly,
+            startDate: '2026-10-12',
+            endDate: '2026-10-18',
+          );
+
+      final budgets = await container.read(budgetsProvider.future);
+      final weeklyBudget = budgets.firstWhere((b) => b.name == 'Belanja Mingguan');
+      expect(weeklyBudget.period, BudgetPeriod.weekly);
+      expect(weeklyBudget.isWeekly, true);
+      expect(weeklyBudget.isDaily, false);
+      expect(weeklyBudget.isMonthly, false);
+      expect(weeklyBudget.startDate, '2026-10-12');
+      expect(weeklyBudget.endDate, '2026-10-18');
+      expect(weeklyBudget.dailyLimit, 350000);
+      expect(weeklyBudget.limit, 350000);
+    });
+
+    test('Creating a monthly budget stores period and date range correctly', () async {
+      await container.read(budgetsProvider.notifier).createBudget(
+            name: 'Biaya Hidup Bulanan',
+            dailyLimit: 2500000,
+            period: BudgetPeriod.monthly,
+            startDate: '2026-10-01',
+            endDate: '2026-10-31',
+          );
+
+      final budgets = await container.read(budgetsProvider.future);
+      final monthlyBudget = budgets.firstWhere((b) => b.name == 'Biaya Hidup Bulanan');
+      expect(monthlyBudget.period, BudgetPeriod.monthly);
+      expect(monthlyBudget.isMonthly, true);
+      expect(monthlyBudget.isWeekly, false);
+      expect(monthlyBudget.isDaily, false);
+      expect(monthlyBudget.startDate, '2026-10-01');
+      expect(monthlyBudget.endDate, '2026-10-31');
+      expect(monthlyBudget.dailyLimit, 2500000);
+    });
+
+    test('Updating a budget period changes its period and dates', () async {
+      await container.read(budgetsProvider.notifier).createBudget(
+            name: 'Kopi',
+            dailyLimit: 20000,
+            period: BudgetPeriod.daily,
+            startDate: '2026-10-12',
+          );
+
+      final budgetId = (await container.read(budgetsProvider.future)).first.id;
+      await container.read(budgetsProvider.notifier).updateBudget(
+            id: budgetId,
+            name: 'Kopi Mingguan',
+            dailyLimit: 100000,
+            period: BudgetPeriod.weekly,
+            startDate: '2026-10-12',
+            endDate: '2026-10-18',
+          );
+
+      final updated = (await container.read(budgetsProvider.future)).first;
+      expect(updated.name, 'Kopi Mingguan');
+      expect(updated.period, BudgetPeriod.weekly);
+      expect(updated.dailyLimit, 100000);
+      expect(updated.endDate, '2026-10-18');
+    });
   });
 }

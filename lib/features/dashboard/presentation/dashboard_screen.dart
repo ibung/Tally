@@ -761,7 +761,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Belum ada kuota harian aktif',
+                    'Belum ada kuota aktif',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary(context),
@@ -819,7 +819,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Kuota Harian',
+                          'Kuota Belanja',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

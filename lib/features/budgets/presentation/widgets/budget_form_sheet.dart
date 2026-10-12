@@ -28,14 +28,31 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _limitController;
+  late BudgetPeriod _selectedPeriod;
+  late DateTime _startDate;
+  DateTime? _endDate;
   bool _isLoading = false;
 
-  static const _suggestions = [
+  static const _dailySuggestions = [
     'Makan',
     'Kopi & Jajan',
     'Transportasi',
     'Bensin',
     'Belanja Harian',
+  ];
+
+  static const _weeklySuggestions = [
+    'Belanja Mingguan',
+    'Uang Jajan Minggu Ini',
+    'Makan & Hangout',
+    'Bensin Mingguan',
+  ];
+
+  static const _monthlySuggestions = [
+    'Biaya Hidup Bulanan',
+    'Belanja Bulanan',
+    'Kuota Bulanan',
+    'Tagihan & Langganan',
   ];
 
   @override
@@ -48,6 +65,116 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
     _limitController = TextEditingController(
       text: initialLimit > 0 ? CurrencyFormatter.format(initialLimit) : '',
     );
+
+    _selectedPeriod = budget?.period ?? BudgetPeriod.daily;
+
+    final now = DateTime.now();
+    if (budget != null) {
+      _startDate = DateTime.tryParse(budget.startDate) ?? now;
+      if (budget.endDate != null) {
+        _endDate = DateTime.tryParse(budget.endDate!);
+      } else if (_selectedPeriod == BudgetPeriod.weekly) {
+        _endDate = _startDate.add(const Duration(days: 6));
+      } else if (_selectedPeriod == BudgetPeriod.monthly) {
+        _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+      }
+    } else {
+      _startDate = now;
+      _applyDefaultDatesForPeriod(_selectedPeriod, preserveStartDate: false);
+    }
+  }
+
+  void _applyDefaultDatesForPeriod(BudgetPeriod period, {bool preserveStartDate = true}) {
+    final now = DateTime.now();
+    if (!preserveStartDate) {
+      if (period == BudgetPeriod.monthly) {
+        // Melacak bulan realtime yang ada saat ini
+        _startDate = DateTime(now.year, now.month, 1);
+      } else {
+        _startDate = now;
+      }
+    }
+
+    if (period == BudgetPeriod.daily) {
+      _endDate = null;
+    } else if (period == BudgetPeriod.weekly) {
+      // Otomatis 7 hari (startDate s/d startDate + 6 hari)
+      _endDate = _startDate.add(const Duration(days: 6));
+    } else if (period == BudgetPeriod.monthly) {
+      // Otomatis sampai akhir bulan berjalan
+      _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+    }
+  }
+
+  void _onPeriodChanged(BudgetPeriod period) {
+    if (_selectedPeriod == period) return;
+    setState(() {
+      _selectedPeriod = period;
+      _applyDefaultDatesForPeriod(period, preserveStartDate: false);
+    });
+  }
+
+  Future<void> _pickStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2040),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.textPrimary(context),
+              onPrimary: AppTheme.primaryButtonText(context),
+              surface: AppTheme.cardBg(context),
+              onSurface: AppTheme.textPrimary(context),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        // Otomatis sesuaikan endDate sesuai periode
+        if (_selectedPeriod == BudgetPeriod.weekly) {
+          _endDate = _startDate.add(const Duration(days: 6));
+        } else if (_selectedPeriod == BudgetPeriod.monthly) {
+          _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+        }
+      });
+    }
+  }
+
+  Future<void> _pickEndDate() async {
+    final initial = _endDate ?? _startDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(_startDate) ? _startDate : initial,
+      firstDate: _startDate,
+      lastDate: DateTime(2040),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.textPrimary(context),
+              onPrimary: AppTheme.primaryButtonText(context),
+              surface: AppTheme.cardBg(context),
+              onSurface: AppTheme.textPrimary(context),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+      });
+    }
   }
 
   @override
@@ -68,24 +195,65 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
     }
   }
 
+  List<String> get _currentSuggestions {
+    switch (_selectedPeriod) {
+      case BudgetPeriod.weekly:
+        return _weeklySuggestions;
+      case BudgetPeriod.monthly:
+        return _monthlySuggestions;
+      case BudgetPeriod.daily:
+        return _dailySuggestions;
+    }
+  }
+
+  String get _limitLabel {
+    switch (_selectedPeriod) {
+      case BudgetPeriod.weekly:
+        return 'Batas Maksimal Mingguan (Rp)';
+      case BudgetPeriod.monthly:
+        return 'Batas Maksimal Bulanan (Rp)';
+      case BudgetPeriod.daily:
+        return 'Batas Maksimal per Hari (Rp)';
+    }
+  }
+
+  String get _periodInfoText {
+    switch (_selectedPeriod) {
+      case BudgetPeriod.weekly:
+        return 'Kuota ini melacak pengeluaran selama 1 minggu (7 hari) atau sesuai rentang tanggal yang dipilih.';
+      case BudgetPeriod.monthly:
+        return 'Kuota ini melacak pengeluaran dari bulan realtime atau rentang tanggal yang dipilih.';
+      case BudgetPeriod.daily:
+        return 'Kuota ini dihitung per hari tanpa rollover. Penggunaan akan otomatis direset setiap hari.';
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     final name = _nameController.text.trim();
-    final dailyLimit = CurrencyFormatter.parseInt(_limitController.text);
+    final limit = CurrencyFormatter.parseInt(_limitController.text);
+    final startDateStr = DateFormatter.toLocalDate(_startDate);
+    final endDateStr = _endDate != null ? DateFormatter.toLocalDate(_endDate!) : null;
 
     try {
       if (widget.initialBudget != null) {
         await ref.read(budgetsProvider.notifier).updateBudget(
               id: widget.initialBudget!.id,
               name: name,
-              dailyLimit: dailyLimit,
+              dailyLimit: limit,
+              period: _selectedPeriod,
+              startDate: startDateStr,
+              endDate: endDateStr,
             );
       } else {
         await ref.read(budgetsProvider.notifier).createBudget(
               name: name,
-              dailyLimit: dailyLimit,
+              dailyLimit: limit,
+              period: _selectedPeriod,
+              startDate: startDateStr,
+              endDate: endDateStr,
             );
       }
       if (mounted) Navigator.of(context).pop();
@@ -138,7 +306,7 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
 
               // Title
               Text(
-                isEdit ? 'Edit Kuota Harian' : 'Tambah Kuota Harian',
+                isEdit ? 'Edit Kuota' : 'Tambah Kuota Baru',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -146,7 +314,69 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
+
+              // Pilihan Periode Kuota (Harian, Mingguan, Bulanan)
+              Text(
+                'Periode Kuota',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary(context),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppTheme.chipBg(context),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.border(context)),
+                ),
+                child: Row(
+                  children: BudgetPeriod.values.map((period) {
+                    final isSelected = _selectedPeriod == period;
+                    return Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _onPeriodChanged(period),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.cardBg(context) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(9),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppTheme.isDark(context)
+                                          ? const Color(0x30000000)
+                                          : const Color(0x0A000000),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              period.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                color: isSelected
+                                    ? AppTheme.textPrimary(context)
+                                    : AppTheme.textSecondary(context),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 18),
 
               // Nama Kuota
               Text(
@@ -161,8 +391,12 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  hintText: 'Contoh: Makan Siang, Kopi, Jajan',
+                decoration: InputDecoration(
+                  hintText: _selectedPeriod == BudgetPeriod.monthly
+                      ? 'Contoh: Biaya Hidup Bulanan, Kuota Belanja'
+                      : _selectedPeriod == BudgetPeriod.weekly
+                          ? 'Contoh: Belanja Mingguan, Uang Jajan'
+                          : 'Contoh: Makan Siang, Kopi, Jajan',
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
@@ -177,7 +411,7 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: _suggestions.map((suggestion) {
+                children: _currentSuggestions.map((suggestion) {
                   return InkWell(
                     onTap: () => setState(() => _nameController.text = suggestion),
                     borderRadius: BorderRadius.circular(8),
@@ -200,11 +434,158 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // Batas Harian (Rp)
+              // Pilihan Tanggal & Sampai Tanggal (untuk Mingguan & Bulanan)
+              if (_selectedPeriod != BudgetPeriod.daily) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Rentang Tanggal',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary(context),
+                      ),
+                    ),
+                    Text(
+                      _selectedPeriod == BudgetPeriod.weekly
+                          ? 'Otomatis 7 Hari'
+                          : 'Realtime Bulan',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // Mulai Tanggal
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickStartDate,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.subtleBg(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.border(context)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mulai Tanggal',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textSecondary(context),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: 14,
+                                    color: AppTheme.textPrimary(context),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      DateFormatter.formatDate(_startDate),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary(context),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Sampai Tanggal
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickEndDate,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.subtleBg(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.border(context)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sampai Tanggal',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textSecondary(context),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.event_available_rounded,
+                                    size: 14,
+                                    color: AppTheme.textPrimary(context),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _endDate != null
+                                          ? DateFormatter.formatDate(_endDate!)
+                                          : 'Pilih Tanggal',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary(context),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _selectedPeriod == BudgetPeriod.weekly
+                      ? 'Sampai tanggal diisi otomatis 7 hari, tetap bisa Anda sesuaikan jika ingin cut-off berbeda.'
+                      : 'Secara realtime melacak bulan berjalan, atau sesuaikan tanggal bila siklus gajian berbeda.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary(context),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+
+              // Batas Maksimal (Rp)
               Text(
-                'Batas Maksimal per Hari (Rp)',
+                _limitLabel,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -217,20 +598,24 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: _onLimitChanged,
-                decoration: const InputDecoration(
-                  hintText: 'Rp 50.000',
+                decoration: InputDecoration(
+                  hintText: _selectedPeriod == BudgetPeriod.monthly
+                      ? 'Rp 2.500.000'
+                      : _selectedPeriod == BudgetPeriod.weekly
+                          ? 'Rp 500.000'
+                          : 'Rp 50.000',
                 ),
                 validator: (val) {
                   final amount = CurrencyFormatter.parseInt(val ?? '');
                   if (amount <= 0) {
-                    return 'Batas harian harus lebih besar dari 0';
+                    return 'Batas kuota harus lebih besar dari 0';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Info PRD: Reset tiap hari tanpa rollover
+              // Info Box Penjelasan Periode
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -249,7 +634,7 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Kuota ini dihitung per hari tanpa rollover. Penggunaan akan otomatis direset ke 0 pada hari berikutnya.',
+                        _periodInfoText,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary(context),

@@ -15,6 +15,7 @@ class BudgetsScreen extends ConsumerStatefulWidget {
 
 class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   bool _showInactive = false;
+  BudgetPeriod? _periodFilter; // null = Semua
 
   void _showBudgetOptions(BuildContext context, DailyBudgetModel budget) {
     showModalBottomSheet(
@@ -43,13 +44,34 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                budget.name,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary(context),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      budget.name,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary(context),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.chipBg(context),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      budget.period.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary(context),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -107,7 +129,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
         ),
         content: Text(
-          'Yakin ingin menghapus kuota "${budget.name}"? Riwayat transaksi lama yang pernah menggunakan kuota ini akan tetap tersimpan.',
+          'Yakin ingin menghapus kuota "${budget.name}" (${budget.period.label})? Riwayat transaksi lama yang pernah menggunakan kuota ini akan tetap tersimpan.',
           style: TextStyle(color: AppTheme.textSecondary(context)),
         ),
         actions: [
@@ -118,8 +140,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryButtonBg(context),
-              foregroundColor: AppTheme.primaryButtonText(context),
+              backgroundColor: AppTheme.error(context),
+              foregroundColor: Colors.white,
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -132,14 +154,54 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     );
   }
 
+  String _formatBudgetPeriodRange(DailyBudgetModel budget) {
+    final start = DateTime.tryParse(budget.startDate);
+    final end = budget.endDate != null ? DateTime.tryParse(budget.endDate!) : null;
+
+    if (budget.isDaily) {
+      if (start != null) {
+        return 'Harian • ${DateFormatter.formatDate(start)}';
+      }
+      return 'Harian';
+    }
+
+    if (start != null && end != null) {
+      return '${DateFormatter.formatDate(start)} - ${DateFormatter.formatDate(end)}';
+    } else if (start != null) {
+      return 'Mulai ${DateFormatter.formatDate(start)}';
+    }
+    return budget.period.label;
+  }
+
+  String? _getRemainingDaysBadge(DailyBudgetModel budget) {
+    if (budget.endDate == null) return null;
+    final end = DateTime.tryParse(budget.endDate!);
+    if (end == null) return null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(end.year, end.month, end.day);
+    final diff = target.difference(today).inDays;
+
+    if (diff < 0) return 'Berakhir';
+    if (diff == 0) return 'Hari Terakhir';
+    return '$diff hari lagi';
+  }
+
+  IconData _getPeriodIcon(BudgetPeriod period) {
+    switch (period) {
+      case BudgetPeriod.daily:
+        return Icons.today_rounded;
+      case BudgetPeriod.weekly:
+        return Icons.date_range_rounded;
+      case BudgetPeriod.monthly:
+        return Icons.calendar_month_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final budgetsAsync = ref.watch(budgetsProvider);
-    final summary = ref.watch(dailyBudgetSummaryProvider);
-
-    final globalProgress = summary.totalLimit > 0
-        ? (summary.totalSpent / summary.totalLimit).clamp(0.0, 1.0)
-        : 0.0;
 
     return Scaffold(
       backgroundColor: AppTheme.bg(context),
@@ -156,100 +218,166 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header Total Kuota Hero Card
-                    Container(
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: AppTheme.cardBg(context),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.isDark(context) ? const Color(0x20000000) : const Color(0x08000000),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.pie_chart_outline_rounded,
-                                size: 18,
-                                color: AppTheme.textSecondary(context),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Total Kuota Belanja Hari Ini',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.textSecondary(context),
-                                  letterSpacing: 0.2,
-                                ),
+                    // Dynamic Summary Card
+                    budgetsAsync.maybeWhen(
+                      data: (allBudgets) {
+                        final activeList = allBudgets.where((b) {
+                          if (!b.isActive) return false;
+                          if (_periodFilter != null && b.period != _periodFilter) return false;
+                          return true;
+                        }).toList();
+
+                        final totalLimit = activeList.fold<int>(0, (s, b) => s + b.dailyLimit);
+                        final totalSpent = activeList.fold<int>(0, (s, b) => s + b.spent);
+                        final remaining = totalLimit - totalSpent;
+                        final progress = totalLimit > 0
+                            ? (totalSpent / totalLimit).clamp(0.0, 1.0)
+                            : 0.0;
+
+                        String headerTitle;
+                        if (_periodFilter == BudgetPeriod.daily) {
+                          headerTitle = 'Total Kuota Harian Hari Ini';
+                        } else if (_periodFilter == BudgetPeriod.weekly) {
+                          headerTitle = 'Total Kuota Mingguan Aktif';
+                        } else if (_periodFilter == BudgetPeriod.monthly) {
+                          headerTitle = 'Total Kuota Bulanan Aktif';
+                        } else {
+                          headerTitle = 'Total Seluruh Kuota Aktif';
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.all(22),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardBg(context),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.borderStrong(context), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.isDark(context)
+                                    ? const Color(0x20000000)
+                                    : const Color(0x08000000),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            CurrencyFormatter.format(summary.totalLimit),
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.textPrimary(context),
-                              letterSpacing: -1,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Progress Bar
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: globalProgress,
-                              minHeight: 6,
-                              backgroundColor: AppTheme.border(context),
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.textPrimary(context)),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Sub info terpakai & sisa
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Terpakai: ${CurrencyFormatter.format(summary.totalSpent)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.textSecondary(context),
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.pie_chart_outline_rounded,
+                                    size: 18,
+                                    color: AppTheme.textSecondary(context),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    headerTitle,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.textSecondary(context),
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 10),
                               Text(
-                                summary.remaining >= 0
-                                    ? 'Sisa: ${CurrencyFormatter.format(summary.remaining)}'
-                                    : 'Lebih: ${CurrencyFormatter.format(summary.remaining.abs())}',
+                                CurrencyFormatter.format(totalLimit),
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
                                   color: AppTheme.textPrimary(context),
+                                  letterSpacing: -1,
                                 ),
                               ),
+                              const SizedBox(height: 14),
+
+                              // Progress Bar
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  minHeight: 6,
+                                  backgroundColor: AppTheme.border(context),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.textPrimary(context),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Sub info terpakai & sisa
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Terpakai: ${CurrencyFormatter.format(totalSpent)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textSecondary(context),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    remaining >= 0
+                                        ? 'Sisa: ${CurrencyFormatter.format(remaining)}'
+                                        : 'Lebih: ${CurrencyFormatter.format(remaining.abs())}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
+                          ),
+                        );
+                      },
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Period Filter Pills (Semua | Harian | Mingguan | Bulanan)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _FilterChip(
+                            label: 'Semua',
+                            selected: _periodFilter == null,
+                            onTap: () => setState(() => _periodFilter = null),
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Harian',
+                            selected: _periodFilter == BudgetPeriod.daily,
+                            onTap: () => setState(() => _periodFilter = BudgetPeriod.daily),
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Mingguan',
+                            selected: _periodFilter == BudgetPeriod.weekly,
+                            onTap: () => setState(() => _periodFilter = BudgetPeriod.weekly),
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Bulanan',
+                            selected: _periodFilter == BudgetPeriod.monthly,
+                            onTap: () => setState(() => _periodFilter = BudgetPeriod.monthly),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
 
                     // Controls Header: Tab Aktif/Nonaktif & Tambah Kuota
                     Row(
                       children: [
-                        // Toggle Filter
+                        // Toggle Filter Aktif / Nonaktif
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
@@ -279,7 +407,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 14,
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
@@ -288,10 +416,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryButtonText(context)),
+                                Icon(
+                                  Icons.add_rounded,
+                                  size: 16,
+                                  color: AppTheme.primaryButtonText(context),
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Tambah',
+                                  'Tambah Kuota',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -328,47 +460,71 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 ),
               ),
               data: (budgets) {
-                final filtered = budgets
-                    .where((b) => b.isActive != _showInactive)
-                    .toList();
+                final filtered = budgets.where((b) {
+                  if (b.isActive == _showInactive) return false;
+                  if (_periodFilter != null && b.period != _periodFilter) return false;
+                  return true;
+                }).toList();
 
                 if (filtered.isEmpty) {
+                  String emptyTitle;
+                  String emptySubtitle;
+
+                  if (_showInactive) {
+                    emptyTitle = 'Tidak ada kuota nonaktif';
+                    emptySubtitle = 'Kuota yang dinonaktifkan akan muncul di sini';
+                  } else {
+                    if (_periodFilter == BudgetPeriod.weekly) {
+                      emptyTitle = 'Belum ada kuota mingguan';
+                      emptySubtitle = 'Buat kuota mingguan untuk mengatur belanja 7 hari ke depan';
+                    } else if (_periodFilter == BudgetPeriod.monthly) {
+                      emptyTitle = 'Belum ada kuota bulanan';
+                      emptySubtitle = 'Buat kuota bulanan untuk membatasi pengeluaran per bulan berjalan';
+                    } else if (_periodFilter == BudgetPeriod.daily) {
+                      emptyTitle = 'Belum ada kuota harian';
+                      emptySubtitle = 'Buat batas kuota harian untuk membatasi pengeluaran per hari';
+                    } else {
+                      emptyTitle = 'Belum ada kuota belanja';
+                      emptySubtitle = 'Tambah kuota Harian, Mingguan, atau Bulanan untuk mengontrol pengeluaran';
+                    }
+                  }
+
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _showInactive
-                                ? Icons.pause_circle_outline
-                                : Icons.pie_chart_outline_rounded,
-                            size: 48,
-                            color: AppTheme.textMuted(context),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _showInactive
-                                ? 'Tidak ada kuota nonaktif'
-                                : 'Belum ada kuota harian',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textSecondary(context),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _showInactive
-                                ? 'Kuota yang dinonaktifkan akan muncul di sini'
-                                : 'Buat batas kuota harian (misal: Makan Rp50.000) untuk membatasi pengeluaran',
-                            style: TextStyle(
-                              fontSize: 12,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showInactive
+                                  ? Icons.pause_circle_outline
+                                  : Icons.pie_chart_outline_rounded,
+                              size: 48,
                               color: AppTheme.textMuted(context),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Text(
+                              emptyTitle,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textSecondary(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              emptySubtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textMuted(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -380,6 +536,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final budget = filtered[index];
+                        final remainingBadge = _getRemainingDaysBadge(budget);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -403,7 +560,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      // Icon
+                                      // Icon Periode
                                       Container(
                                         width: 40,
                                         height: 40,
@@ -412,14 +569,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Icon(
-                                          Icons.donut_small_rounded,
+                                          _getPeriodIcon(budget.period),
                                           color: AppTheme.textPrimary(context),
                                           size: 20,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
 
-                                      // Nama Kuota & Limit
+                                      // Nama Kuota & Rate
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,21 +588,50 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                                 fontWeight: FontWeight.bold,
                                                 color: AppTheme.textPrimary(context),
                                               ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 3),
-                                            Text(
-                                              '${CurrencyFormatter.format(budget.dailyLimit)} / hari',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: AppTheme.textSecondary(context),
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  '${CurrencyFormatter.format(budget.dailyLimit)} ${budget.period.rateLabel}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: AppTheme.textSecondary(context),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 5,
+                                                    vertical: 1.5,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.subtleBg(context),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                    border: Border.all(
+                                                      color: AppTheme.border(context),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    budget.period.label,
+                                                    style: TextStyle(
+                                                      fontSize: 9.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppTheme.textSecondary(context),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
                                       ),
 
-                                      // Over-Budget Warning Badge
+                                      // Over-Budget Warning / Remaining Days Badge
                                       if (budget.isOverBudget)
                                         Container(
                                           padding: const EdgeInsets.symmetric(
@@ -465,6 +651,26 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               letterSpacing: 0.5,
                                             ),
                                           ),
+                                        )
+                                      else if (remainingBadge != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.subtleBg(context),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: AppTheme.border(context)),
+                                          ),
+                                          child: Text(
+                                            remainingBadge,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.textSecondary(context),
+                                            ),
+                                          ),
                                         ),
                                       const SizedBox(width: 4),
                                       Icon(
@@ -474,7 +680,28 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 14),
+                                  const SizedBox(height: 10),
+
+                                  // Rentang Tanggal Subtitle
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.schedule_rounded,
+                                        size: 13,
+                                        color: AppTheme.textSecondary(context),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        _formatBudgetPeriodRange(budget),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.textSecondary(context),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
 
                                   // Progress Bar
                                   ClipRRect(
@@ -546,6 +773,7 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -556,7 +784,9 @@ class _FilterChip extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: AppTheme.isDark(context) ? const Color(0x30000000) : const Color(0x0A000000),
+                    color: AppTheme.isDark(context)
+                        ? const Color(0x30000000)
+                        : const Color(0x0A000000),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
