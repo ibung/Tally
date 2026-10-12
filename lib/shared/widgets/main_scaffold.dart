@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tally/core/theme/app_theme.dart';
 
@@ -27,26 +28,29 @@ class MainScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = _currentIndex(context);
 
-    return Scaffold(
-      backgroundColor: AppTheme.white,
-      appBar: AppBar(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: AppTheme.systemUiStyle,
+      child: Scaffold(
         backgroundColor: AppTheme.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leadingWidth: 56,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, top: 12, bottom: 12),
-          child: Image.asset(
-            'assets/icons/tallyAppIconForeground.png',
-            fit: BoxFit.contain,
+        appBar: AppBar(
+          backgroundColor: AppTheme.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leadingWidth: 56,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 20, top: 12, bottom: 12),
+            child: Image.asset(
+              'assets/icons/tallyAppIconForeground.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
-      ),
-      body: child,
-      bottomNavigationBar: _BottomNavBar(
-        currentIndex: currentIndex,
-        onTap: (i) => context.go(_tabs[i].path),
-        tabs: _tabs,
+        body: child,
+        bottomNavigationBar: _BottomNavBar(
+          currentIndex: currentIndex,
+          onTap: (i) => context.go(_tabs[i].path),
+          tabs: _tabs,
+        ),
       ),
     );
   }
@@ -68,11 +72,11 @@ class _BottomNavBar extends StatelessWidget {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      margin: EdgeInsets.only(bottom: bottomPadding + 5),
-      decoration: const BoxDecoration(
-        color: AppTheme.white,
+      color: AppTheme.white,
+      padding: EdgeInsets.only(
+        top: 10,
+        bottom: bottomPadding > 0 ? bottomPadding : 10,
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: List.generate(tabs.length, (i) {
           final tab = tabs[i];

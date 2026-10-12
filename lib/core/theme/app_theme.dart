@@ -17,6 +17,16 @@ class AppTheme {
   static const Color incomeColor = Color(0xFF0A0A0A);
   static const Color expenseColor = Color(0xFF666666);
 
+  static const SystemUiOverlayStyle systemUiStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
+  );
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -45,7 +55,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: systemUiStyle,
         iconTheme: IconThemeData(color: black),
         titleTextStyle: TextStyle(
           fontSize: 22,
