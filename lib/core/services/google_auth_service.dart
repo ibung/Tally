@@ -12,6 +12,10 @@ class GoogleAuthService {
   static const _prefKeyPhoto = 'google_user_photo';
   static const _prefKeyIsLoggedIn = 'google_is_logged_in';
 
+  /// Google Cloud Console OAuth 2.0 Web Client ID
+  static const String serverClientId =
+      '682065182512-oq0g8l0r5n85qavl7jvsrggbbfuaegj8.apps.googleusercontent.com';
+
   bool _initialized = false;
   GoogleSignInAccount? _currentUser;
   final _userStreamController = StreamController<GoogleSignInAccount?>.broadcast();
@@ -24,7 +28,9 @@ class GoogleAuthService {
     _initialized = true;
 
     try {
-      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.initialize(
+        serverClientId: serverClientId,
+      );
       GoogleSignIn.instance.authenticationEvents.listen((event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
           _currentUser = event.user;
