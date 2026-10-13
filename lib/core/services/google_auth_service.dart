@@ -61,9 +61,7 @@ class GoogleAuthService {
   Future<GoogleSignInAccount?> signIn() async {
     try {
       await initialize();
-      final account = await GoogleSignIn.instance.authenticate(
-        scopeHint: [drive.DriveApi.driveAppdataScope],
-      );
+      final account = await GoogleSignIn.instance.authenticate();
       _currentUser = account;
       await _saveCachedUser(account);
       _userStreamController.add(account);
