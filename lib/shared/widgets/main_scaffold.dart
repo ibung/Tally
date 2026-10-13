@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tally/core/theme/app_theme.dart';
 import 'package:tally/core/theme/theme_provider.dart';
+import 'package:tally/features/sync/presentation/providers/sync_providers.dart';
+import 'package:tally/features/sync/presentation/widgets/sync_account_sheet.dart';
 
 class MainScaffold extends ConsumerWidget {
   final StatefulNavigationShell? navigationShell;
@@ -85,6 +87,54 @@ class MainScaffold extends ConsumerWidget {
             ],
           ),
           actions: [
+            Consumer(
+              builder: (context, ref, _) {
+                final userAsync = ref.watch(googleUserProvider);
+                final cachedUserAsync = ref.watch(cachedGoogleUserProvider);
+                final syncState = ref.watch(syncProvider);
+                final isLoggedIn = userAsync.valueOrNull != null || (cachedUserAsync.valueOrNull?['email'] != null);
+
+                return IconButton(
+                  tooltip: 'Cadangan & Sinkronisasi',
+                  icon: syncState.isSyncing
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(AppTheme.textPrimary(context)),
+                          ),
+                        )
+                      : Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              isLoggedIn ? Icons.cloud_done_rounded : Icons.cloud_queue_rounded,
+                              size: 22,
+                              color: isLoggedIn ? AppTheme.textPrimary(context) : AppTheme.textSecondary(context),
+                            ),
+                            if (isLoggedIn)
+                              Positioned(
+                                right: -1,
+                                top: -1,
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    SyncAccountSheet.show(context);
+                  },
+                );
+              },
+            ),
             IconButton(
               tooltip: isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap',
               icon: AnimatedSwitcher(

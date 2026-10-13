@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tally/shared/models/category_model.dart';
 import 'package:tally/shared/repositories/category_repository.dart';
+import 'package:tally/core/services/drive_sync_service.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository();
@@ -46,6 +47,7 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
 
     await repo.insert(category);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> updateCategory({
@@ -69,18 +71,21 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
 
     await repo.update(updated);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> toggleArchive(String id, bool archived) async {
     final repo = ref.read(categoryRepositoryProvider);
     await repo.archive(id, archived: archived);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> deleteCategory(String id) async {
     final repo = ref.read(categoryRepositoryProvider);
     await repo.delete(id);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 }
 

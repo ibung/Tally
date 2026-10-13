@@ -9,6 +9,8 @@ import 'package:tally/features/transactions/presentation/widgets/transaction_for
 import 'package:tally/shared/models/budget_model.dart';
 import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/widgets/transaction_detail_dialog.dart';
+import 'package:tally/features/sync/presentation/providers/sync_providers.dart';
+import 'package:tally/features/sync/presentation/widgets/sync_account_sheet.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -168,6 +170,61 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Cloud Sync Banner (shown if not logged in)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final userAsync = ref.watch(googleUserProvider);
+                        final cachedUserAsync = ref.watch(cachedGoogleUserProvider);
+                        final isLoggedIn = userAsync.valueOrNull != null || (cachedUserAsync.valueOrNull?['email'] != null);
+                        if (isLoggedIn) return const SizedBox.shrink();
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: InkWell(
+                            onTap: () => SyncAccountSheet.show(context),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.subtleBg(context),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppTheme.border(context)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.cloud_upload_outlined, size: 20, color: AppTheme.textPrimary(context)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Cadangkan ke Google Drive',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary(context),
+                                          ),
+                                        ),
+                                        Text(
+                                          'Amankan data keuangan Anda agar tidak hilang',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: AppTheme.textSecondary(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.textSecondary(context)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
                     // Date Navigation Bar
                     _DateNavigator(
                       selectedDate: selectedDate,

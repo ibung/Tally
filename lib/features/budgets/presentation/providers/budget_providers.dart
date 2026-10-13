@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:tally/core/utils/formatters.dart';
 import 'package:tally/shared/models/budget_model.dart';
 import 'package:tally/shared/repositories/budget_repository.dart';
+import 'package:tally/core/services/drive_sync_service.dart';
 
 final budgetRepositoryProvider = Provider<BudgetRepository>((ref) {
   return BudgetRepository();
@@ -60,6 +61,7 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
 
     await repo.insert(budget);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> updateBudget({
@@ -85,18 +87,21 @@ class BudgetsNotifier extends AsyncNotifier<List<DailyBudgetModel>> {
 
     await repo.update(updated);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> toggleActive(String id, bool isActive) async {
     final repo = ref.read(budgetRepositoryProvider);
     await repo.setActive(id, isActive);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> deleteBudget(String id) async {
     final repo = ref.read(budgetRepositoryProvider);
     await repo.delete(id);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 }
 

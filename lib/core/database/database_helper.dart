@@ -17,6 +17,24 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<String> getDatabaseFilePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, _dbName);
+  }
+
+  Future<void> closeDatabase() async {
+    if (_database != null && _database!.isOpen) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  Future<Database> reopenDatabase() async {
+    await closeDatabase();
+    _database = await _initDatabase();
+    return _database!;
+  }
+
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _dbName);

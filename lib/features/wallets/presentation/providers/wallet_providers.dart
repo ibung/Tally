@@ -5,6 +5,7 @@ import 'package:tally/features/transactions/presentation/providers/transaction_p
 import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/models/wallet_model.dart';
 import 'package:tally/shared/repositories/wallet_repository.dart';
+import 'package:tally/core/services/drive_sync_service.dart';
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   return WalletRepository();
@@ -52,6 +53,7 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
 
     await repo.insert(wallet);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> updateWallet({
@@ -110,18 +112,21 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
     try {
       ref.read(transactionsProvider.notifier).refresh();
     } catch (_) {}
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> toggleArchive(String id, bool archived) async {
     final repo = ref.read(walletRepositoryProvider);
     await repo.archive(id, archived: archived);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> deleteWallet(String id) async {
     final repo = ref.read(walletRepositoryProvider);
     await repo.delete(id);
     await refresh();
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 }
 

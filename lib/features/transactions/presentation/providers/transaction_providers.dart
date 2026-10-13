@@ -5,6 +5,7 @@ import 'package:tally/features/budgets/presentation/providers/budget_providers.d
 import 'package:tally/features/wallets/presentation/providers/wallet_providers.dart';
 import 'package:tally/shared/models/transaction_model.dart';
 import 'package:tally/shared/repositories/transaction_repository.dart';
+import 'package:tally/core/services/drive_sync_service.dart';
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   return TransactionRepository();
@@ -78,6 +79,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
     ref.read(transactionsVersionProvider.notifier).state++;
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> updateTransaction({
@@ -119,6 +121,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
     ref.read(transactionsVersionProvider.notifier).state++;
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 
   Future<void> deleteTransaction(String id) async {
@@ -130,6 +133,7 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionModel>> {
     ref.read(walletsProvider.notifier).refresh();
     ref.read(budgetsProvider.notifier).refresh();
     ref.read(transactionsVersionProvider.notifier).state++;
+    DriveSyncService.instance.triggerBackgroundSync();
   }
 }
 

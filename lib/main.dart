@@ -7,6 +7,8 @@ import 'package:tally/app.dart';
 import 'package:tally/core/database/database_helper.dart';
 import 'package:tally/core/theme/app_theme.dart';
 import 'package:tally/core/theme/theme_provider.dart';
+import 'package:tally/core/services/google_auth_service.dart';
+import 'package:tally/core/services/drive_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +16,11 @@ void main() async {
 
   // Initialize database
   await DatabaseHelper.instance.database;
+
+  // Initialize Google Auth & background sync
+  GoogleAuthService.instance.initialize().then((_) {
+    DriveSyncService.instance.triggerBackgroundSync();
+  });
 
   // Load saved theme mode
   ThemeMode initialThemeMode = ThemeMode.light;
