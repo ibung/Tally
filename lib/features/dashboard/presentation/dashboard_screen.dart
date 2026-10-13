@@ -342,6 +342,10 @@ class _DateNavigator extends StatelessWidget {
   Widget build(BuildContext context) {
     final relativeLabel = DateFormatter.formatRelative(selectedDate);
     final fullDateLabel = DateFormatter.formatDate(selectedDate);
+    final isSpecialRelative = relativeLabel == 'Hari ini' ||
+        relativeLabel == 'Kemarin' ||
+        relativeLabel == 'Besok';
+    final displayText = isSpecialRelative ? '$relativeLabel • $fullDateLabel' : fullDateLabel;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -379,7 +383,7 @@ class _DateNavigator extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '$relativeLabel • $fullDateLabel',
+                        displayText,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -722,7 +726,14 @@ class _DailyCashFlowCard extends StatelessWidget {
 
 class _DailyBudgetOverviewCard extends StatelessWidget {
   final AsyncValue<List<DailyBudgetModel>> budgetsAsync;
-  final ({int totalLimit, int totalSpent, int remaining}) budgetSummary;
+  final ({
+    int totalLimit,
+    int totalSpent,
+    int remaining,
+    int tabunganSisa,
+    int deficitsCovered,
+    bool hasDeficitCovered,
+  }) budgetSummary;
 
   const _DailyBudgetOverviewCard({
     required this.budgetsAsync,
@@ -819,7 +830,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Kuota Belanja',
+                          'Kuota',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -877,7 +888,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Sub Info: Terpakai vs Sisa
+                // Sub Info: Terpakai vs Tabungan/Sisa
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -891,8 +902,8 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                     ),
                     Text(
                       !isOver
-                          ? 'Sisa: ${CurrencyFormatter.format(remaining)}'
-                          : 'Lebih: ${CurrencyFormatter.format(remaining.abs())}',
+                          ? 'Tabungan/Sisa: ${CurrencyFormatter.format(remaining)}'
+                          : 'Defisit: ${CurrencyFormatter.format(remaining.abs())}',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -902,7 +913,39 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                   ],
                 ),
 
-                // Non-judgmental Over-budget notice (PRD Bab 4 & 7)
+                // Notice when deficit is covered from Tabungan/Sisa
+                if (budgetSummary.hasDeficitCovered && !isOver) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.chipBg(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.savings_outlined,
+                          size: 14,
+                          color: AppTheme.textPrimary(context),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Kelebihan kuota ${CurrencyFormatter.format(budgetSummary.deficitsCovered)} ditutup dari Tabungan/Sisa',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary(context),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Over-budget notice if collective Tabungan/Sisa exhausted
                 if (isOver) ...[
                   const SizedBox(height: 10),
                   Container(
@@ -921,7 +964,7 @@ class _DailyBudgetOverviewCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Pengeluaran hari ini melewati kuota sebesar ${CurrencyFormatter.format(remaining.abs())}',
+                            'Pengeluaran melebihi total kuota & Tabungan/Sisa sebesar ${CurrencyFormatter.format(remaining.abs())}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -1138,6 +1181,15 @@ class _TransactionListItem extends StatelessWidget {
                             color: AppTheme.textSecondary(context),
                           ),
                         ),
+                        if (tx.isEdited)
+                          Text(
+                            '• diedit ${DateFormatter.formatTime(tx.updatedAt)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                              color: AppTheme.textSecondary(context),
+                            ),
+                          ),
                       ],
                     ),
                   ],

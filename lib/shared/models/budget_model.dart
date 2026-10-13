@@ -1,7 +1,8 @@
 enum BudgetPeriod {
   daily('daily', 'Harian', '/ hari'),
   weekly('weekly', 'Mingguan', '/ minggu'),
-  monthly('monthly', 'Bulanan', '/ bulan');
+  monthly('monthly', 'Bulanan', '/ bulan'),
+  custom('custom', 'Bebas', '');
 
   final String value;
   final String label;
@@ -12,6 +13,7 @@ enum BudgetPeriod {
   static BudgetPeriod fromString(String? val) {
     if (val == 'weekly' || val == 'mingguan') return BudgetPeriod.weekly;
     if (val == 'monthly' || val == 'bulanan') return BudgetPeriod.monthly;
+    if (val == 'custom' || val == 'bebas') return BudgetPeriod.custom;
     return BudgetPeriod.daily;
   }
 }
@@ -51,6 +53,7 @@ class DailyBudgetModel {
   bool get isDaily => period == BudgetPeriod.daily;
   bool get isWeekly => period == BudgetPeriod.weekly;
   bool get isMonthly => period == BudgetPeriod.monthly;
+  bool get isCustom => period == BudgetPeriod.custom;
 
   DailyBudgetModel copyWith({
     String? id,

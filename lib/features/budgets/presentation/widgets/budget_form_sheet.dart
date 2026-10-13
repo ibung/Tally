@@ -55,6 +55,13 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
     'Tagihan & Langganan',
   ];
 
+  static const _customSuggestions = [
+    'Liburan',
+    'Renovasi Rumah',
+    'Event Khusus',
+    'Proyek Singkat',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -103,6 +110,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
     } else if (period == BudgetPeriod.monthly) {
       // Otomatis sampai akhir bulan berjalan
       _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+    } else if (period == BudgetPeriod.custom) {
+      // Bebas: default fleksibel (misal 30 hari atau bebas diatur pengguna)
+      _endDate = _startDate.add(const Duration(days: 30));
     }
   }
 
@@ -143,6 +153,10 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
           _endDate = _startDate.add(const Duration(days: 6));
         } else if (_selectedPeriod == BudgetPeriod.monthly) {
           _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+        } else if (_selectedPeriod == BudgetPeriod.custom) {
+          if (_endDate != null && _endDate!.isBefore(_startDate)) {
+            _endDate = _startDate;
+          }
         }
       });
     }
@@ -201,6 +215,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
         return _weeklySuggestions;
       case BudgetPeriod.monthly:
         return _monthlySuggestions;
+      case BudgetPeriod.custom:
+        return _customSuggestions;
       case BudgetPeriod.daily:
         return _dailySuggestions;
     }
@@ -212,6 +228,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
         return 'Batas Maksimal Mingguan (Rp)';
       case BudgetPeriod.monthly:
         return 'Batas Maksimal Bulanan (Rp)';
+      case BudgetPeriod.custom:
+        return 'Batas Maksimal Kuota (Rp)';
       case BudgetPeriod.daily:
         return 'Batas Maksimal per Hari (Rp)';
     }
@@ -223,6 +241,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
         return 'Kuota ini melacak pengeluaran selama 1 minggu (7 hari) atau sesuai rentang tanggal yang dipilih.';
       case BudgetPeriod.monthly:
         return 'Kuota ini melacak pengeluaran dari bulan realtime atau rentang tanggal yang dipilih.';
+      case BudgetPeriod.custom:
+        return 'Kuota bebas melacak pengeluaran dalam rentang tanggal fleksibel yang Anda tentukan sendiri.';
       case BudgetPeriod.daily:
         return 'Kuota ini dihitung per hari tanpa rollover. Penggunaan akan otomatis direset setiap hari.';
     }
@@ -409,7 +429,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                       ? 'Contoh: Biaya Hidup Bulanan, Kuota Belanja'
                       : _selectedPeriod == BudgetPeriod.weekly
                           ? 'Contoh: Belanja Mingguan, Uang Jajan'
-                          : 'Contoh: Makan Siang, Kopi, Jajan',
+                          : _selectedPeriod == BudgetPeriod.custom
+                              ? 'Contoh: Liburan, Renovasi, Event'
+                              : 'Contoh: Makan Siang, Kopi, Jajan',
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
@@ -465,7 +487,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                     Text(
                       _selectedPeriod == BudgetPeriod.weekly
                           ? 'Otomatis 7 Hari'
-                          : 'Realtime Bulan',
+                          : _selectedPeriod == BudgetPeriod.monthly
+                              ? 'Realtime Bulan'
+                              : 'Bebas Pilih Rentang',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

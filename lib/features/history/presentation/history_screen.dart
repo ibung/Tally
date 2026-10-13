@@ -756,6 +756,15 @@ class _HistoryListItem extends StatelessWidget {
                             color: AppTheme.textSecondary(context),
                           ),
                         ),
+                        if (tx.isEdited)
+                          Text(
+                            '• diedit ${DateFormatter.formatTime(tx.updatedAt)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                              color: AppTheme.textSecondary(context),
+                            ),
+                          ),
                       ],
                     ),
                   ],

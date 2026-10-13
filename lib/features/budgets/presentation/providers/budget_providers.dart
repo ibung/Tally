@@ -107,18 +107,34 @@ final budgetsProvider = AsyncNotifierProvider<BudgetsNotifier, List<DailyBudgetM
 /// Filter periode kuota yang dipilih pada tampilan (null = Semua)
 final selectedBudgetPeriodFilterProvider = StateProvider<BudgetPeriod?>((ref) => null);
 
-/// Ringkasan total kuota dan penggunaan dari seluruh kuota aktif (dapat disaring per periode jika diinginkan)
-final dailyBudgetSummaryProvider = Provider<({int totalLimit, int totalSpent, int remaining})>((ref) {
+/// Ringkasan kolektif kuota seluruh kategori, di mana sisa kuota dihimpun menjadi 'Tabungan/Sisa'
+/// dan kelebihan pengeluaran suatu kategori ditutup dari Tabungan/Sisa.
+/// Tabungan/Sisa di-reset 1 bulan sekali setiap awal bulan.
+final dailyBudgetSummaryProvider = Provider<({
+  int totalLimit,
+  int totalSpent,
+  int remaining,
+  int tabunganSisa,
+  int deficitsCovered,
+  bool hasDeficitCovered,
+})>((ref) {
   final budgets = ref.watch(budgetsProvider).valueOrNull ?? [];
   final activeBudgets = budgets.where((b) => b.isActive).toList();
 
   final totalLimit = activeBudgets.fold<int>(0, (sum, b) => sum + b.dailyLimit);
   final totalSpent = activeBudgets.fold<int>(0, (sum, b) => sum + b.spent);
-  final remaining = totalLimit - totalSpent;
+  final tabunganSisa = totalLimit - totalSpent;
+
+  final deficitsCovered = activeBudgets
+      .where((b) => b.spent > b.dailyLimit)
+      .fold<int>(0, (sum, b) => sum + (b.spent - b.dailyLimit));
 
   return (
     totalLimit: totalLimit,
     totalSpent: totalSpent,
-    remaining: remaining,
+    remaining: tabunganSisa,
+    tabunganSisa: tabunganSisa,
+    deficitsCovered: deficitsCovered,
+    hasDeficitCovered: deficitsCovered > 0,
   );
 });

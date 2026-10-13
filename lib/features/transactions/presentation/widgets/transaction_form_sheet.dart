@@ -7,7 +7,9 @@ import 'package:tally/features/budgets/presentation/providers/budget_providers.d
 import 'package:tally/features/categories/presentation/providers/category_providers.dart';
 import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:tally/features/wallets/presentation/providers/wallet_providers.dart';
+import 'package:tally/features/categories/presentation/widgets/category_form_sheet.dart';
 import 'package:tally/shared/models/budget_model.dart';
+import 'package:tally/shared/models/category_model.dart';
 import 'package:tally/shared/models/transaction_model.dart';
 
 class TransactionFormSheet extends ConsumerStatefulWidget {
@@ -177,6 +179,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       return;
     }
 
+    final wallets = ref.read(walletsProvider).valueOrNull?.where((w) => !w.isArchived).toList() ?? [];
+
     if (_selectedType == TransactionType.transfer) {
       if (_selectedSourceWalletId == null || _selectedDestinationWalletId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -190,10 +194,86 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         );
         return;
       }
+      // Constraint saldo untuk transfer keluar
+      final sourceWallet = wallets.where((w) => w.id == _selectedSourceWalletId).firstOrNull;
+      if (sourceWallet != null) {
+        final isSameSourceEdit = widget.initialTransaction != null &&
+            widget.initialTransaction!.sourceWalletId == sourceWallet.id &&
+            widget.initialTransaction!.type == TransactionType.transfer;
+        final available = sourceWallet.currentBalance +
+            (isSameSourceEdit ? widget.initialTransaction!.amount : 0);
+        if (amount > available) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Saldo ${sourceWallet.name} tidak mencukupi (Saldo: ${CurrencyFormatter.format(available)})',
+              ),
+            ),
+          );
+          return;
+        }
+      }
     } else {
       if (_selectedWalletId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pilih dompet yang digunakan')),
+        );
+        return;
+      }
+      // Constraint saldo untuk pengeluaran
+      if (_selectedType == TransactionType.expense) {
+        final wallet = wallets.where((w) => w.id == _selectedWalletId).firstOrNull;
+        if (wallet != null) {
+          final isSameWalletEdit = widget.initialTransaction != null &&
+              widget.initialTransaction!.walletId == wallet.id &&
+              widget.initialTransaction!.type == TransactionType.expense;
+          final available = wallet.currentBalance +
+              (isSameWalletEdit ? widget.initialTransaction!.amount : 0);
+          if (amount > available) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Saldo ${wallet.name} tidak mencukupi (Saldo: ${CurrencyFormatter.format(available)})',
+                ),
+              ),
+            );
+            return;
+          }
+        }
+      }
+    }
+
+    // Constraint Kategori Wajib (Item 2)
+    if (_selectedType != TransactionType.transfer) {
+      final categories = _selectedType == TransactionType.income
+          ? ref.read(incomeCategoriesProvider)
+          : ref.read(expenseCategoriesProvider);
+
+      if (categories.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Kategori ${_selectedType.label.toLowerCase()} belum ada. Buat kategori terlebih dahulu.',
+            ),
+            action: SnackBarAction(
+              label: 'Buat',
+              onPressed: () {
+                CategoryFormSheet.show(
+                  context,
+                  defaultType: _selectedType == TransactionType.income
+                      ? CategoryType.income
+                      : CategoryType.expense,
+                );
+              },
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kategori transaksi wajib dipilih')),
         );
         return;
       }
@@ -277,6 +357,33 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       } catch (_) {}
     }
     final isOverBudgetWarning = selectedBudget != null && inputAmount > selectedBudget.remaining;
+
+    // Balance constraint check for UI warning
+    int availableBalance = 0;
+    String? sourceWalletName;
+    bool isInsufficientBalance = false;
+
+    if (_selectedType == TransactionType.expense) {
+      final w = wallets.where((w) => w.id == _selectedWalletId).firstOrNull;
+      if (w != null) {
+        sourceWalletName = w.name;
+        final isSameWalletEdit = widget.initialTransaction != null &&
+            widget.initialTransaction!.walletId == w.id &&
+            widget.initialTransaction!.type == TransactionType.expense;
+        availableBalance = w.currentBalance + (isSameWalletEdit ? widget.initialTransaction!.amount : 0);
+        isInsufficientBalance = inputAmount > availableBalance;
+      }
+    } else if (_selectedType == TransactionType.transfer) {
+      final w = wallets.where((w) => w.id == _selectedSourceWalletId).firstOrNull;
+      if (w != null) {
+        sourceWalletName = w.name;
+        final isSameSourceEdit = widget.initialTransaction != null &&
+            widget.initialTransaction!.sourceWalletId == w.id &&
+            widget.initialTransaction!.type == TransactionType.transfer;
+        availableBalance = w.currentBalance + (isSameSourceEdit ? widget.initialTransaction!.amount : 0);
+        isInsufficientBalance = inputAmount > availableBalance;
+      }
+    }
 
     final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -399,6 +506,25 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
               ),
+              if (isInsufficientBalance && inputAmount > 0) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.error_outline_rounded, size: 16, color: AppTheme.error(context)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Saldo ${sourceWalletName ?? "dompet"} tidak mencukupi (Tersedia: ${CurrencyFormatter.format(availableBalance)})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.error(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
 
               // Over-Budget Warning Notice (Prinsip PRD: tidak menghakimi)
@@ -478,7 +604,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   items: wallets.map((w) {
                     return DropdownMenuItem(
                       value: w.id,
-                      child: Text(w.name, overflow: TextOverflow.ellipsis),
+                      child: Text('${w.name} (${CurrencyFormatter.format(w.currentBalance)})', overflow: TextOverflow.ellipsis),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedSourceWalletId = val),
@@ -499,7 +625,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   items: wallets.map((w) {
                     return DropdownMenuItem(
                       value: w.id,
-                      child: Text(w.name, overflow: TextOverflow.ellipsis),
+                      child: Text('${w.name} (${CurrencyFormatter.format(w.currentBalance)})', overflow: TextOverflow.ellipsis),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedDestinationWalletId = val),
@@ -507,10 +633,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 14),
               ],
 
-              // Kuota Belanja (Khusus Pengeluaran)
+              // Kuota (Khusus Pengeluaran)
               if (_selectedType == TransactionType.expense && budgets.isNotEmpty) ...[
                 Text(
-                  'Kuota Belanja (Opsional)',
+                  'Kuota (Opsional)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -544,37 +670,116 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 const SizedBox(height: 14),
               ],
 
-              // Kategori (Khusus Income / Expense)
-              if (_selectedType != TransactionType.transfer && categories.isNotEmpty) ...[
-                Text(
-                  'Kategori (Opsional)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary(context),
-                  ),
+              // Kategori (Wajib untuk Income & Expense)
+              if (_selectedType != TransactionType.transfer) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kategori (Wajib)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary(context),
+                      ),
+                    ),
+                    if (categories.isNotEmpty)
+                      InkWell(
+                        onTap: () {
+                          CategoryFormSheet.show(
+                            context,
+                            defaultType: _selectedType == TransactionType.income
+                                ? CategoryType.income
+                                : CategoryType.expense,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Text(
+                            '+ Tambah Kategori',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textSecondary(context),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String?>(
-                  initialValue: _selectedCategoryId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Tanpa Kategori', overflow: TextOverflow.ellipsis),
+                if (categories.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.chipBg(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.border(context)),
                     ),
-                    ...categories.map((c) {
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 20,
+                          color: AppTheme.textSecondary(context),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Belum ada kategori ${_selectedType.label.toLowerCase()}. Buat kategori terlebih dahulu.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textPrimary(context),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            CategoryFormSheet.show(
+                              context,
+                              defaultType: _selectedType == TransactionType.income
+                                  ? CategoryType.income
+                                  : CategoryType.expense,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryButtonBg(context),
+                            foregroundColor: AppTheme.primaryButtonText(context),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.add_rounded, size: 14),
+                          label: const Text('Buat', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCategoryId,
+                    isExpanded: true,
+                    hint: const Text('Pilih Kategori'),
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    items: categories.map((c) {
                       return DropdownMenuItem(
                         value: c.id,
                         child: Text(c.name, overflow: TextOverflow.ellipsis),
                       );
-                    }),
-                  ],
-                  onChanged: (val) => setState(() => _selectedCategoryId = val),
-                ),
+                    }).toList(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Kategori wajib dipilih';
+                      }
+                      return null;
+                    },
+                    onChanged: (val) => setState(() => _selectedCategoryId = val),
+                  ),
                 const SizedBox(height: 14),
               ],
 

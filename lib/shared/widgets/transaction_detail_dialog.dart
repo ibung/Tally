@@ -185,9 +185,15 @@ class _TransactionDetailDialog extends ConsumerWidget {
                     children: [
                       _DetailRow(
                         icon: Icons.calendar_today_outlined,
-                        label: 'Waktu',
+                        label: 'Waktu Transaksi',
                         value: DateFormatter.formatDateTime(tx.occurredAt),
                       ),
+                      if (tx.isEdited)
+                        _DetailRow(
+                          icon: Icons.history_rounded,
+                          label: 'Riwayat Edit',
+                          value: 'Diedit pada ${DateFormatter.formatDateTime(tx.updatedAt)}',
+                        ),
                       if (tx.type == TransactionType.transfer) ...[
                         _DetailRow(
                           icon: Icons.account_balance_wallet_outlined,
@@ -215,7 +221,7 @@ class _TransactionDetailDialog extends ConsumerWidget {
                       if (tx.budgetName != null)
                         _DetailRow(
                           icon: Icons.pie_chart_outline_rounded,
-                          label: 'Kuota Harian',
+                          label: 'Kuota',
                           value: tx.budgetName!,
                         ),
                       if (tx.note != null && tx.note!.isNotEmpty)

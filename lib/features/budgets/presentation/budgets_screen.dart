@@ -196,6 +196,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         return Icons.date_range_rounded;
       case BudgetPeriod.monthly:
         return Icons.calendar_month_rounded;
+      case BudgetPeriod.custom:
+        return Icons.all_inclusive_rounded;
     }
   }
 
@@ -241,8 +243,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           headerTitle = 'Total Kuota Mingguan Aktif';
                         } else if (_periodFilter == BudgetPeriod.monthly) {
                           headerTitle = 'Total Kuota Bulanan Aktif';
+                        } else if (_periodFilter == BudgetPeriod.custom) {
+                          headerTitle = 'Total Kuota Bebas Aktif';
                         } else {
-                          headerTitle = 'Total Seluruh Kuota Aktif';
+                          headerTitle = 'Total Kuota & Tabungan/Sisa';
                         }
 
                         return Container(
@@ -323,12 +327,32 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                   ),
                                   Text(
                                     remaining >= 0
-                                        ? 'Sisa: ${CurrencyFormatter.format(remaining)}'
-                                        : 'Lebih: ${CurrencyFormatter.format(remaining.abs())}',
+                                        ? 'Tabungan/Sisa: ${CurrencyFormatter.format(remaining)}'
+                                        : 'Defisit: ${CurrencyFormatter.format(remaining.abs())}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       color: AppTheme.textPrimary(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.savings_outlined,
+                                    size: 13,
+                                    color: AppTheme.textSecondary(context),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      'Kelebihan kuota diambil dari Tabungan/Sisa • Reset 1 bulan sekali',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondary(context),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -368,6 +392,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             label: 'Bulanan',
                             selected: _periodFilter == BudgetPeriod.monthly,
                             onTap: () => setState(() => _periodFilter = BudgetPeriod.monthly),
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Bebas',
+                            selected: _periodFilter == BudgetPeriod.custom,
+                            onTap: () => setState(() => _periodFilter = BudgetPeriod.custom),
                           ),
                         ],
                       ),
@@ -643,7 +673,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
-                                            'LEBIH KUOTA',
+                                            'DITUTUP TABUNGAN',
                                             style: TextStyle(
                                               fontSize: 9,
                                               fontWeight: FontWeight.w800,
@@ -731,7 +761,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                       Text(
                                         budget.remaining >= 0
                                             ? 'Sisa: ${CurrencyFormatter.format(budget.remaining)}'
-                                            : 'Over: ${CurrencyFormatter.format(budget.remaining.abs())}',
+                                            : 'Ambil Tabungan: ${CurrencyFormatter.format(budget.remaining.abs())}',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,

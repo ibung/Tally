@@ -86,6 +86,9 @@ class TransactionModel {
   bool get isCorrection =>
       note != null && note!.toLowerCase().contains('koreksi saldo');
 
+  /// Menandakan apakah transaksi ini pernah diedit setelah pertama kali dibuat
+  bool get isEdited => updatedAt.difference(createdAt).inSeconds > 2;
+
   TransactionModel copyWith({
     String? id,
     TransactionType? type,
