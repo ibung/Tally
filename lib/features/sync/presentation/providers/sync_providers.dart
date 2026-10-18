@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/database/database_helper.dart';
 import '../../../../core/services/google_auth_service.dart';
 import '../../../../core/services/drive_sync_service.dart';
 import '../../../wallets/presentation/providers/wallet_providers.dart';
@@ -12,6 +13,7 @@ class SyncState {
   final bool isChecking;
   final DateTime? lastSyncTime;
   final BackupInfo? remoteBackup;
+  final int localTxCount;
   final String? message;
   final String? error;
 
@@ -20,6 +22,7 @@ class SyncState {
     this.isChecking = false,
     this.lastSyncTime,
     this.remoteBackup,
+    this.localTxCount = 0,
     this.message,
     this.error,
   });
@@ -29,6 +32,7 @@ class SyncState {
     bool? isChecking,
     DateTime? lastSyncTime,
     BackupInfo? remoteBackup,
+    int? localTxCount,
     String? message,
     String? error,
   }) {
@@ -37,6 +41,7 @@ class SyncState {
       isChecking: isChecking ?? this.isChecking,
       lastSyncTime: lastSyncTime ?? this.lastSyncTime,
       remoteBackup: remoteBackup ?? this.remoteBackup,
+      localTxCount: localTxCount ?? this.localTxCount,
       message: message,
       error: error,
     );
@@ -60,7 +65,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   Future<void> _init() async {
     final lastTime = await DriveSyncService.instance.getLastSyncTime();
-    state = state.copyWith(lastSyncTime: lastTime);
+    final txCount = await DatabaseHelper.instance.getTransactionCount();
+    state = state.copyWith(lastSyncTime: lastTime, localTxCount: txCount);
     if (GoogleAuthService.instance.currentUser != null) {
       await checkRemoteBackup();
     }
@@ -70,7 +76,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
     state = state.copyWith(isChecking: true, error: null);
     try {
       final info = await DriveSyncService.instance.checkRemoteBackup();
-      state = state.copyWith(isChecking: false, remoteBackup: info);
+      final txCount = await DatabaseHelper.instance.getTransactionCount();
+      state = state.copyWith(isChecking: false, remoteBackup: info, localTxCount: txCount);
     } catch (e) {
       state = state.copyWith(isChecking: false, error: e.toString());
     }
@@ -81,8 +88,30 @@ class SyncNotifier extends StateNotifier<SyncState> {
     try {
       final user = await GoogleAuthService.instance.signIn();
       if (user != null) {
-        state = state.copyWith(isSyncing: false, message: 'Berhasil login: ${user.email}');
-        await checkRemoteBackup();
+        state = state.copyWith(isSyncing: true, message: 'Berhasil login: ${user.email}. Memeriksa cadangan...');
+        
+        final remote = await DriveSyncService.instance.checkRemoteBackup();
+        final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
+        final txCount = await DatabaseHelper.instance.getTransactionCount();
+
+        state = state.copyWith(remoteBackup: remote, localTxCount: txCount);
+
+        // Jika ada cadangan di cloud dan database lokal saat ini KOSONG (misal install ulang / ganti HP),
+        // OTOMATIS pulihkan data dari Google Drive!
+        if (remote.exists && isLocalEmpty) {
+          state = state.copyWith(
+            message: 'Ditemukan data cadangan di Google Drive. Memulihkan data Anda...',
+          );
+          await restoreNow();
+        } else if (!remote.exists && !isLocalEmpty) {
+          // Jika di cloud belum ada cadangan dan lokal ada data, otomatis cadangkan
+          await backupNow();
+        } else {
+          state = state.copyWith(
+            isSyncing: false,
+            message: 'Berhasil login: ${user.email}',
+          );
+        }
         return true;
       } else {
         state = state.copyWith(isSyncing: false, error: 'Login dibatalkan.');
@@ -96,17 +125,32 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   Future<void> signOut() async {
     await GoogleAuthService.instance.signOut();
-    state = const SyncState();
+    final txCount = await DatabaseHelper.instance.getTransactionCount();
+    state = SyncState(localTxCount: txCount);
   }
 
-  Future<bool> backupNow() async {
+  Future<bool> backupNow({bool force = false}) async {
     state = state.copyWith(isSyncing: true, error: null, message: 'Mengunggah cadangan ke Google Drive...');
     try {
-      final success = await DriveSyncService.instance.backupToDrive();
+      final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
+      if (isLocalEmpty && !force) {
+        final remote = await DriveSyncService.instance.checkRemoteBackup();
+        if (remote.exists) {
+          state = state.copyWith(
+            isSyncing: false,
+            error: 'Data di HP ini masih kosong! Pencadangan dibatalkan agar tidak menimpa cadangan di Google Drive. Silakan pilih "Pulihkan Data".',
+          );
+          return false;
+        }
+      }
+
+      final success = await DriveSyncService.instance.backupToDrive(force: force);
       final lastTime = await DriveSyncService.instance.getLastSyncTime();
+      final txCount = await DatabaseHelper.instance.getTransactionCount();
       state = state.copyWith(
         isSyncing: false,
         lastSyncTime: lastTime,
+        localTxCount: txCount,
         message: 'Cadangan berhasil disimpan ke Google Drive!',
       );
       await checkRemoteBackup();
@@ -126,18 +170,27 @@ class SyncNotifier extends StateNotifier<SyncState> {
       final success = await DriveSyncService.instance.restoreFromDrive();
       final lastTime = await DriveSyncService.instance.getLastSyncTime();
 
-      // Invalidate semua provider lokal agar UI langsung merefleksikan data pulih
+      // Trigger counter transaksi & invalidate seluruh provider lokal agar UI langsung merefleksikan data pulih
+      ref.read(transactionsVersionProvider.notifier).state++;
       ref.invalidate(walletsProvider);
       ref.invalidate(totalActiveBalanceProvider);
       ref.invalidate(categoriesProvider);
       ref.invalidate(transactionsProvider);
       ref.invalidate(budgetsProvider);
+      ref.invalidate(dailySummaryProvider);
+      ref.invalidate(historicalEndBalanceProvider);
+
+      final txCount = await DatabaseHelper.instance.getTransactionCount();
 
       state = state.copyWith(
         isSyncing: false,
         lastSyncTime: lastTime,
-        message: 'Data berhasil dipulihkan dari Google Drive!',
+        localTxCount: txCount,
+        message: txCount > 0
+            ? 'Data berhasil dipulihkan ($txCount transaksi dimuat)!'
+            : 'Sinkronisasi selesai (0 transaksi di cadangan).',
       );
+      await checkRemoteBackup();
       return success;
     } catch (e) {
       state = state.copyWith(

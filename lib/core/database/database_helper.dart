@@ -35,6 +35,28 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<int> getTransactionCount() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as cnt FROM transactions');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<bool> isDatabaseEmpty() async {
+    final db = await database;
+    final txCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) as cnt FROM transactions'),
+    ) ?? 0;
+    final budgetCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) as cnt FROM daily_budgets'),
+    ) ?? 0;
+    final walletCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) as cnt FROM wallets'),
+    ) ?? 0;
+
+    // Database dianggap kosong jika belum ada transaksi, belum ada kuota, dan wallet <= 1 (default)
+    return txCount == 0 && budgetCount == 0 && walletCount <= 1;
+  }
+
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _dbName);

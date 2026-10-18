@@ -112,7 +112,7 @@ class SyncAccountSheet extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.error(context).withOpacity(0.5)),
+                  border: Border.all(color: AppTheme.error(context).withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   children: [
@@ -231,7 +231,7 @@ class SyncAccountSheet extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.login_rounded, size: 20),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Text(
                       'Masuk dengan Akun Google',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -330,11 +330,9 @@ class SyncAccountSheet extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Terakhir Dicadangkan', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
+                  Text('Data di HP ini', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
                   Text(
-                    syncState.lastSyncTime != null
-                        ? '${DateFormatter.formatDate(syncState.lastSyncTime!)} ${DateFormatter.formatTime(syncState.lastSyncTime!)}'
-                        : 'Belum pernah',
+                    '${syncState.localTxCount} transaksi',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary(context)),
                   ),
                 ],
@@ -343,11 +341,11 @@ class SyncAccountSheet extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Status Google Drive', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
+                  Text('Cadangan di Google Drive', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
                   Text(
                     syncState.remoteBackup?.exists == true
-                        ? 'Tersedia di Cloud'
-                        : (syncState.isChecking ? 'Memeriksa...' : 'Belum ada cadangan'),
+                        ? 'Tersedia (${syncState.remoteBackup?.sizeBytes != null ? (syncState.remoteBackup!.sizeBytes! / 1024).toStringAsFixed(1) : '0'} KB)'
+                        : (syncState.isChecking ? 'Memeriksa...' : 'Belum ada'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -356,77 +354,184 @@ class SyncAccountSheet extends ConsumerWidget {
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Action Buttons: Backup Now & Restore
-        ElevatedButton(
-          onPressed: syncState.isSyncing
-              ? null
-              : () async {
-                  await syncNotifier.backupNow();
-                },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryButtonBg(context),
-            foregroundColor: AppTheme.primaryButtonText(context),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-          ),
-          child: syncState.isSyncing
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              if (syncState.lastSyncTime != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(AppTheme.primaryButtonText(context)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Menyinkronkan...'),
-                  ],
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.backup_rounded, size: 20),
-                    const SizedBox(width: 10),
+                    Text('Sinkronisasi Terakhir', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
                     Text(
-                      'Cadangkan Sekarang',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      '${DateFormatter.formatDate(syncState.lastSyncTime!)} ${DateFormatter.formatTime(syncState.lastSyncTime!)}',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary(context)),
                     ),
                   ],
                 ),
-        ),
-        const SizedBox(height: 10),
-
-        OutlinedButton(
-          onPressed: syncState.isSyncing
-              ? null
-              : () => _showRestoreConfirmation(context, syncNotifier),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.textPrimary(context),
-            side: BorderSide(color: AppTheme.borderStrong(context)),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.restore_rounded, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'Pulihkan Data dari Cloud',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
+              ],
             ],
           ),
         ),
+
+        if (syncState.remoteBackup?.exists == true && syncState.localTxCount == 0) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 20, color: Colors.amber),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Data Anda ditemukan di Google Drive! Silakan tekan tombol "Pulihkan Data" di bawah untuk memuat kembali semua transaksi dan dompet Anda.',
+                    style: TextStyle(fontSize: 12, height: 1.4, color: AppTheme.textPrimary(context)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
+        // Action Buttons: Prioritas dinamis (Pulihkan jika HP kosong tapi cloud ada data)
+        if (syncState.remoteBackup?.exists == true && syncState.localTxCount == 0) ...[
+          // Prioritas 1: Pulihkan
+          ElevatedButton(
+            onPressed: syncState.isSyncing
+                ? null
+                : () => _showRestoreConfirmation(context, syncNotifier, syncState.localTxCount),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: syncState.isSyncing
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(AppTheme.primaryButtonText(context)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Memproses Sinkronisasi...'),
+                    ],
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.restore_rounded, size: 20),
+                      SizedBox(width: 10),
+                      Text(
+                        'Pulihkan Data dari Google Drive',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: syncState.isSyncing
+                ? null
+                : () async {
+                    await syncNotifier.backupNow();
+                  },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.textPrimary(context),
+              side: BorderSide(color: AppTheme.borderStrong(context)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.backup_rounded, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'Cadangkan Sekarang',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Prioritas 1: Cadangkan
+          ElevatedButton(
+            onPressed: syncState.isSyncing
+                ? null
+                : () async {
+                    await syncNotifier.backupNow();
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryButtonBg(context),
+              foregroundColor: AppTheme.primaryButtonText(context),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: syncState.isSyncing
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(AppTheme.primaryButtonText(context)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Menyinkronkan...'),
+                    ],
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.backup_rounded, size: 20),
+                      SizedBox(width: 10),
+                      Text(
+                        'Cadangkan Sekarang',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: syncState.isSyncing
+                ? null
+                : () => _showRestoreConfirmation(context, syncNotifier, syncState.localTxCount),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.textPrimary(context),
+              side: BorderSide(color: AppTheme.borderStrong(context)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.restore_rounded, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'Pulihkan Data dari Cloud',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 14),
 
         // Sign Out Button
@@ -446,7 +551,7 @@ class SyncAccountSheet extends ConsumerWidget {
     );
   }
 
-  void _showRestoreConfirmation(BuildContext context, SyncNotifier syncNotifier) {
+  void _showRestoreConfirmation(BuildContext context, SyncNotifier syncNotifier, int localTxCount) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -457,7 +562,9 @@ class SyncAccountSheet extends ConsumerWidget {
           style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
         ),
         content: Text(
-          'Data lokal saat ini akan ditimpa dengan data cadangan terbaru dari Google Drive Anda. Lanjutkan pemulihan?',
+          localTxCount == 0
+              ? 'Data cadangan dari Google Drive Anda akan diunduh dan dipulihkan ke HP ini.'
+              : 'Data saat ini ($localTxCount transaksi) akan digantikan dengan data cadangan dari Google Drive Anda. Lanjutkan?',
           style: TextStyle(fontSize: 14, color: AppTheme.textSecondary(context), height: 1.4),
         ),
         actions: [
