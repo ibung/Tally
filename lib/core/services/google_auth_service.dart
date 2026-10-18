@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'drive_sync_service.dart';
 
 class GoogleAuthService {
   GoogleAuthService._();
@@ -46,36 +51,103 @@ class GoogleAuthService {
     }
   }
 
-  Future<GoogleSignInAccount?> ensureAuthenticated() async {
-    if (_currentUser != null) return _currentUser;
-    await initialize();
-    if (_currentUser != null) return _currentUser;
-
+  Future<bool> isLoggedIn() async {
+    if (_currentUser != null) return true;
     final cached = await getCachedUserData();
-    if (cached?['email'] == null) return null;
+    return cached?['email'] != null;
+  }
 
-    try {
-      final restoreFuture = GoogleSignIn.instance.attemptLightweightAuthentication();
-      if (restoreFuture != null) {
-        final restored = await restoreFuture;
-        if (restored != null) {
-          _currentUser = restored;
-          await _saveCachedUser(restored);
-          _userStreamController.add(restored);
-          return restored;
+  /// Dapatkan AuthClient untuk Drive API.
+  /// Jika [interactive] bernilai false (mode background sync / auto sync),
+  /// pemanggilan ini 100% senyap (SILENT) dan TIDAK AKAN PERNAH memunculkan drawer / dialog pilih akun.
+  Future<http.Client?> getDriveAuthClient({bool interactive = false}) async {
+    await initialize();
+
+    // 1. Coba via _currentUser di memori secara silent
+    if (_currentUser != null) {
+      try {
+        final authz = await _currentUser!.authorizationClient.authorizationForScopes(
+          [drive.DriveApi.driveAppdataScope],
+        );
+        if (authz != null) {
+          return authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+        }
+      } catch (_) {}
+    }
+
+    // 2. Jika tidak ada di memori, coba via GoogleSignInPlatform secara silent dengan email tersimpan
+    final cached = await getCachedUserData();
+    final cachedEmail = cached?['email'];
+    if (cachedEmail != null) {
+      try {
+        final tokenData = await GoogleSignInPlatform.instance.clientAuthorizationTokensForScopes(
+          ClientAuthorizationTokensForScopesParameters(
+            request: AuthorizationRequestDetails(
+              scopes: const [drive.DriveApi.driveAppdataScope],
+              userId: null,
+              email: cachedEmail,
+              promptIfUnauthorized: false, // JANGAN PERNAH MUNCULKAN UI
+            ),
+          ),
+        );
+
+        if (tokenData != null && tokenData.accessToken.isNotEmpty) {
+          final authz = GoogleSignInClientAuthorization(accessToken: tokenData.accessToken);
+          return authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+        }
+      } catch (_) {}
+    }
+
+    // 3. Hanya jika dipanggil dari aksi interaktif pengguna (tombol "Masuk" atau "Cadangkan Sekarang"),
+    // baru izinkan prompt interaktif jika token silent belum tersedia.
+    if (interactive) {
+      if (_currentUser != null) {
+        try {
+          final authz = await _currentUser!.authorizationClient.authorizeScopes(
+            [drive.DriveApi.driveAppdataScope],
+          );
+          return authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+        } catch (_) {}
+      } else {
+        final account = await signIn();
+        if (account != null) {
+          try {
+            final authz = await account.authorizationClient.authorizeScopes(
+              [drive.DriveApi.driveAppdataScope],
+            );
+            return authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+          } catch (_) {}
         }
       }
-    } catch (_) {}
-    return _currentUser;
+    }
+
+    return null;
+  }
+
+  Future<GoogleSignInAccount?> ensureAuthenticated({bool interactive = false}) async {
+    if (_currentUser != null) return _currentUser;
+    if (interactive) {
+      return signIn();
+    }
+    return null;
   }
 
   Future<GoogleSignInAccount?> signIn() async {
     try {
       await initialize();
-      final account = await GoogleSignIn.instance.authenticate();
+      final account = await GoogleSignIn.instance.authenticate(
+        scopeHint: [drive.DriveApi.driveAppdataScope],
+      );
       _currentUser = account;
       await _saveCachedUser(account);
       _userStreamController.add(account);
+
+      // Otorisasi Drive scope sekali di awal saat user login interaktif
+      try {
+        await account.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
+      } catch (_) {}
+
+      DriveSyncService.instance.invalidateCachedDriveApi();
       return account;
     } catch (e) {
       rethrow;
@@ -87,6 +159,7 @@ class GoogleAuthService {
       await GoogleSignIn.instance.signOut();
     } catch (_) {}
     _currentUser = null;
+    DriveSyncService.instance.invalidateCachedDriveApi();
     await _clearCachedUser();
     _userStreamController.add(null);
   }

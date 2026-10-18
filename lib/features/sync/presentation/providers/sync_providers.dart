@@ -135,7 +135,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
     final lastTime = await DriveSyncService.instance.getLastSyncTime();
     final txCount = await DatabaseHelper.instance.getTransactionCount();
     state = state.copyWith(lastSyncTime: lastTime, localTxCount: txCount);
-    if (GoogleAuthService.instance.currentUser != null) {
+    if (await GoogleAuthService.instance.isLoggedIn()) {
       await checkRemoteBackup();
     }
   }
@@ -254,7 +254,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
         }
       }
 
-      final success = await DriveSyncService.instance.backupToDrive(force: force);
+      final success = await DriveSyncService.instance.backupToDrive(force: force, interactive: true);
       final lastTime = await DriveSyncService.instance.getLastSyncTime();
       final txCount = await DatabaseHelper.instance.getTransactionCount();
       state = state.copyWith(
@@ -287,7 +287,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
         return false;
       }
 
-      final success = await DriveSyncService.instance.restoreFromDrive();
+      final success = await DriveSyncService.instance.restoreFromDrive(interactive: true);
       final lastTime = await DriveSyncService.instance.getLastSyncTime();
 
       // Trigger counter transaksi & invalidate seluruh provider lokal agar UI langsung merefleksikan data pulih

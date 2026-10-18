@@ -181,12 +181,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: InkWell(
-                            onTap: () async {
-                              final syncNotifier = ref.read(syncProvider.notifier);
-                              await syncNotifier.signIn();
-                              if (context.mounted) {
-                                SyncAccountSheet.show(context);
-                              }
+                            onTap: () {
+                              SyncAccountSheet.show(context);
                             },
                             borderRadius: BorderRadius.circular(14),
                             child: Container(

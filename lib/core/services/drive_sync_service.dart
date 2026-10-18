@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,14 +81,30 @@ class DriveSyncService {
     }
   }
 
-  Future<drive.DriveApi?> _getDriveApi() async {
-    try {
-      final user = await GoogleAuthService.instance.ensureAuthenticated();
-      if (user == null) return null;
+  drive.DriveApi? _cachedDriveApi;
+  DateTime? _cachedDriveApiTime;
 
-      final authz = await user.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
-      final authClient = authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
-      return drive.DriveApi(authClient);
+  void invalidateCachedDriveApi() {
+    _cachedDriveApi = null;
+    _cachedDriveApiTime = null;
+  }
+
+  Future<drive.DriveApi?> _getDriveApi({bool interactive = false}) async {
+    try {
+      if (_cachedDriveApi != null &&
+          _cachedDriveApiTime != null &&
+          DateTime.now().difference(_cachedDriveApiTime!).inMinutes < 45) {
+        return _cachedDriveApi;
+      }
+
+      final authClient = await GoogleAuthService.instance.getDriveAuthClient(
+        interactive: interactive,
+      );
+      if (authClient == null) return null;
+
+      _cachedDriveApi = drive.DriveApi(authClient);
+      _cachedDriveApiTime = DateTime.now();
+      return _cachedDriveApi;
     } catch (_) {
       return null;
     }
@@ -115,9 +130,9 @@ class DriveSyncService {
   }
 
   /// Mengecek apakah ada file cadangan di Google Drive (appDataFolder)
-  Future<BackupInfo> checkRemoteBackup() async {
+  Future<BackupInfo> checkRemoteBackup({bool interactive = false}) async {
     try {
-      final driveApi = await _getDriveApi();
+      final driveApi = await _getDriveApi(interactive: interactive);
       if (driveApi == null) return const BackupInfo(exists: false);
 
       final fileList = await driveApi.files.list(
@@ -144,14 +159,14 @@ class DriveSyncService {
   }
 
   /// Mengunggah file database tally.db lokal ke Google Drive
-  Future<bool> backupToDrive({bool force = false}) async {
+  Future<bool> backupToDrive({bool force = false, bool interactive = false}) async {
     try {
       final isOnline = await hasInternetConnection();
       if (!isOnline) {
         throw Exception('Tidak ada koneksi internet.');
       }
 
-      final driveApi = await _getDriveApi();
+      final driveApi = await _getDriveApi(interactive: interactive);
       if (driveApi == null) {
         throw Exception('Belum login ke akun Google.');
       }
@@ -165,7 +180,7 @@ class DriveSyncService {
       // Cegah menimpa cadangan cloud jika database lokal di HP ini kosong
       final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
       if (isLocalEmpty && !force) {
-        final remote = await checkRemoteBackup();
+        final remote = await checkRemoteBackup(interactive: interactive);
         if (remote.exists) {
           throw Exception(
             'Data di HP ini masih kosong, sedangkan di Google Drive sudah ada data cadangan Anda. '
@@ -243,14 +258,14 @@ class DriveSyncService {
 
   /// Mengunduh file database dari Google Drive dan menimpa database lokal
   /// Memiliki fitur pemulihan revisi otomatis jika versi terbaru ternyata kosong.
-  Future<bool> restoreFromDrive() async {
+  Future<bool> restoreFromDrive({bool interactive = true}) async {
     try {
       final isOnline = await hasInternetConnection();
       if (!isOnline) {
         throw Exception('Tidak ada koneksi internet.');
       }
 
-      final driveApi = await _getDriveApi();
+      final driveApi = await _getDriveApi(interactive: interactive);
       if (driveApi == null) {
         throw Exception('Belum login ke akun Google.');
       }
@@ -372,8 +387,8 @@ class DriveSyncService {
       _isSyncRunning = true;
 
       // 1. Pastikan akun terhubung
-      final account = await GoogleAuthService.instance.ensureAuthenticated();
-      if (account == null) return;
+      final isLogged = await GoogleAuthService.instance.isLoggedIn();
+      if (!isLogged) return;
 
       // 2. Cek koneksi internet
       final isOnline = await hasInternetConnection();
@@ -390,7 +405,7 @@ class DriveSyncService {
       _currentProgress = SyncProgress.syncing;
       _syncProgressController.add(SyncProgress.syncing);
 
-      final success = await backupToDrive();
+      final success = await backupToDrive(interactive: false);
       if (success) {
         await _setPendingChanges(false);
         _currentProgress = SyncProgress.success;

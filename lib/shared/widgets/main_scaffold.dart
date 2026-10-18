@@ -133,17 +133,9 @@ class MainScaffold extends ConsumerWidget {
                               ),
                           ],
                         ),
-                  onPressed: () async {
+                  onPressed: () {
                     HapticFeedback.lightImpact();
-                    if (!isLoggedIn) {
-                      final syncNotifier = ref.read(syncProvider.notifier);
-                      await syncNotifier.signIn();
-                      if (context.mounted) {
-                        SyncAccountSheet.show(context);
-                      }
-                    } else {
-                      SyncAccountSheet.show(context);
-                    }
+                    SyncAccountSheet.show(context);
                   },
                 );
               },
