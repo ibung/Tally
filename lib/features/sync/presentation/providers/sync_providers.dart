@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/database/database_helper.dart';
@@ -58,9 +59,39 @@ final cachedGoogleUserProvider = FutureProvider<Map<String, String?>?>((ref) asy
 
 class SyncNotifier extends StateNotifier<SyncState> {
   final Ref ref;
+  StreamSubscription<SyncProgress>? _progressSub;
 
   SyncNotifier(this.ref) : super(const SyncState()) {
     _init();
+    _subscribeProgress();
+  }
+
+  void _subscribeProgress() {
+    _progressSub = DriveSyncService.instance.syncProgressStream.listen((progress) async {
+      if (!mounted) return;
+      if (progress == SyncProgress.syncing) {
+        state = state.copyWith(isSyncing: true);
+      } else if (progress == SyncProgress.success) {
+        final lastTime = await DriveSyncService.instance.getLastSyncTime();
+        final txCount = await DatabaseHelper.instance.getTransactionCount();
+        state = state.copyWith(
+          isSyncing: false,
+          lastSyncTime: lastTime,
+          localTxCount: txCount,
+        );
+        await checkRemoteBackup();
+      } else {
+        if (state.isSyncing) {
+          state = state.copyWith(isSyncing: false);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _progressSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _init() async {

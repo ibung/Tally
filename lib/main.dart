@@ -19,7 +19,8 @@ void main() async {
 
   // Initialize Google Auth & background sync
   GoogleAuthService.instance.initialize().then((_) {
-    DriveSyncService.instance.triggerBackgroundSync();
+    DriveSyncService.instance.initializePeriodicSync();
+    DriveSyncService.instance.triggerBackgroundSync(immediate: true, isDataChange: false);
   });
 
   // Load saved theme mode

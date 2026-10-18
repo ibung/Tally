@@ -367,6 +367,28 @@ class SyncAccountSheet extends ConsumerWidget {
                   ],
                 ),
               ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Sinkronisasi Otomatis', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Aktif di Latar Belakang',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
         ),

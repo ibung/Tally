@@ -22,32 +22,96 @@ class BackupInfo {
   });
 }
 
+enum SyncProgress { idle, syncing, success, error }
+
 class DriveSyncService {
   DriveSyncService._();
   static final DriveSyncService instance = DriveSyncService._();
 
   static const _backupFileName = 'tally_backup.db';
   static const _prefKeyLastSync = 'drive_last_sync_time';
+  static const _prefKeyPendingChanges = 'drive_has_pending_changes';
+
+  final _syncProgressController = StreamController<SyncProgress>.broadcast();
+  Stream<SyncProgress> get syncProgressStream => _syncProgressController.stream;
+  SyncProgress _currentProgress = SyncProgress.idle;
+  SyncProgress get currentProgress => _currentProgress;
+
+  Timer? _debounceTimer;
+  Timer? _periodicTimer;
+  bool _isSyncRunning = false;
+
+  void initializePeriodicSync() {
+    _periodicTimer?.cancel();
+    // Cek setiap 3 menit: jika ada perubahan yang tertunda (misal tadi offline), sync otomatis
+    _periodicTimer = Timer.periodic(const Duration(minutes: 3), (_) async {
+      final hasPending = await hasPendingChanges();
+      if (hasPending) {
+        triggerBackgroundSync(immediate: true, isDataChange: false);
+      }
+    });
+  }
+
+  /// Cek koneksi internet sederhana via DNS lookup ke google.com
+  Future<bool> hasInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 4));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Cek apakah ada perubahan data lokal yang belum tersinkron ke cloud
+  Future<bool> hasPendingChanges() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefKeyPendingChanges) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _setPendingChanges(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefKeyPendingChanges, value);
+    } catch (_) {
+      // Aman di lingkungan unit test tanpa ServicesBinding
+    }
+  }
 
   Future<drive.DriveApi?> _getDriveApi() async {
-    final user = GoogleAuthService.instance.currentUser;
-    if (user == null) return null;
+    try {
+      final user = await GoogleAuthService.instance.ensureAuthenticated();
+      if (user == null) return null;
 
-    final authz = await user.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
-    final authClient = authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
-    return drive.DriveApi(authClient);
+      final authz = await user.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
+      final authClient = authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+      return drive.DriveApi(authClient);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<DateTime?> getLastSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final epoch = prefs.getInt(_prefKeyLastSync);
-    if (epoch == null) return null;
-    return DateTime.fromMillisecondsSinceEpoch(epoch);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final epoch = prefs.getInt(_prefKeyLastSync);
+      if (epoch == null) return null;
+      return DateTime.fromMillisecondsSinceEpoch(epoch);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _recordSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_prefKeyLastSync, DateTime.now().millisecondsSinceEpoch);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_prefKeyLastSync, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setBool(_prefKeyPendingChanges, false);
+    } catch (_) {}
   }
 
   /// Mengecek apakah ada file cadangan di Google Drive (appDataFolder)
@@ -273,20 +337,71 @@ class DriveSyncService {
     }
   }
 
-  /// Sinkronisasi otomatis di latar belakang tanpa melempar error ke UI
-  void triggerBackgroundSync() {
-    unawaited(Future(() async {
-      try {
-        if (GoogleAuthService.instance.currentUser != null) {
-          // Jangan pernah auto-sync overwrite ke cloud jika database lokal masih kosong
-          final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
-          if (!isLocalEmpty) {
-            await backupToDrive();
-          }
-        }
-      } catch (_) {
-        // Silent fail saat offline
+  /// Sinkronisasi otomatis di latar belakang dengan debounce & retry saat online
+  void triggerBackgroundSync({bool immediate = false, bool isDataChange = true}) {
+    if (isDataChange) {
+      unawaited(_setPendingChanges(true));
+    }
+
+    _debounceTimer?.cancel();
+
+    if (immediate) {
+      unawaited(_executeBackgroundSync());
+    } else {
+      // Debounce 2.5 detik agar aksi beruntun (misal tambah transaksi berturut-turut) digabung menjadi 1 kali upload
+      _debounceTimer = Timer(const Duration(milliseconds: 2500), () {
+        unawaited(_executeBackgroundSync());
+      });
+    }
+  }
+
+  Future<void> _executeBackgroundSync() async {
+    if (_isSyncRunning) return;
+
+    try {
+      _isSyncRunning = true;
+
+      // 1. Pastikan akun terhubung
+      final account = await GoogleAuthService.instance.ensureAuthenticated();
+      if (account == null) return;
+
+      // 2. Cek koneksi internet
+      final isOnline = await hasInternetConnection();
+      if (!isOnline) {
+        // Tetap tandai ada pending changes agar disinkronkan saat online kembali
+        return;
       }
-    }));
+
+      // 3. Lindungi cadangan cloud: jangan auto-sync jika DB lokal masih kosong
+      final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
+      if (isLocalEmpty) return;
+
+      // 4. Beritahu UI bahwa sinkronisasi sedang berjalan
+      _currentProgress = SyncProgress.syncing;
+      _syncProgressController.add(SyncProgress.syncing);
+
+      final success = await backupToDrive();
+      if (success) {
+        await _setPendingChanges(false);
+        _currentProgress = SyncProgress.success;
+        _syncProgressController.add(SyncProgress.success);
+
+        // Kembalikan ke idle setelah 2.5 detik
+        Future.delayed(const Duration(milliseconds: 2500), () {
+          if (_currentProgress == SyncProgress.success) {
+            _currentProgress = SyncProgress.idle;
+            _syncProgressController.add(SyncProgress.idle);
+          }
+        });
+      } else {
+        _currentProgress = SyncProgress.idle;
+        _syncProgressController.add(SyncProgress.idle);
+      }
+    } catch (_) {
+      _currentProgress = SyncProgress.idle;
+      _syncProgressController.add(SyncProgress.idle);
+    } finally {
+      _isSyncRunning = false;
+    }
   }
 }

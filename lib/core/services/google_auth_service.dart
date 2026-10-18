@@ -57,6 +57,29 @@ class GoogleAuthService {
     }
   }
 
+  Future<GoogleSignInAccount?> ensureAuthenticated() async {
+    if (_currentUser != null) return _currentUser;
+    await initialize();
+    if (_currentUser != null) return _currentUser;
+
+    final cached = await getCachedUserData();
+    if (cached?['email'] == null) return null;
+
+    try {
+      final restoreFuture = GoogleSignIn.instance.attemptLightweightAuthentication();
+      if (restoreFuture != null) {
+        final restored = await restoreFuture;
+        if (restored != null) {
+          _currentUser = restored;
+          await _saveCachedUser(restored);
+          _userStreamController.add(restored);
+          return restored;
+        }
+      }
+    } catch (_) {}
+    return _currentUser;
+  }
+
   Future<GoogleSignInAccount?> signIn() async {
     try {
       await initialize();
