@@ -146,6 +146,11 @@ class DriveSyncService {
   /// Mengunggah file database tally.db lokal ke Google Drive
   Future<bool> backupToDrive({bool force = false}) async {
     try {
+      final isOnline = await hasInternetConnection();
+      if (!isOnline) {
+        throw Exception('Tidak ada koneksi internet.');
+      }
+
       final driveApi = await _getDriveApi();
       if (driveApi == null) {
         throw Exception('Belum login ke akun Google.');
@@ -240,6 +245,11 @@ class DriveSyncService {
   /// Memiliki fitur pemulihan revisi otomatis jika versi terbaru ternyata kosong.
   Future<bool> restoreFromDrive() async {
     try {
+      final isOnline = await hasInternetConnection();
+      if (!isOnline) {
+        throw Exception('Tidak ada koneksi internet.');
+      }
+
       final driveApi = await _getDriveApi();
       if (driveApi == null) {
         throw Exception('Belum login ke akun Google.');

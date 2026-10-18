@@ -23,6 +23,7 @@ class SyncAccountSheet extends ConsumerWidget {
     final syncNotifier = ref.read(syncProvider.notifier);
     final currentUser = GoogleAuthService.instance.currentUser;
     final cachedUserAsync = ref.watch(cachedGoogleUserProvider);
+    final isOnline = ref.watch(isOnlineProvider);
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -138,6 +139,7 @@ class SyncAccountSheet extends ConsumerWidget {
                 cachedUser: cachedUserAsync.valueOrNull,
                 syncState: syncState,
                 syncNotifier: syncNotifier,
+                isOnline: isOnline,
               ),
             ] else ...[
               _buildLoggedOutSection(
@@ -249,6 +251,7 @@ class SyncAccountSheet extends ConsumerWidget {
     required Map<String, String?>? cachedUser,
     required SyncState syncState,
     required SyncNotifier syncNotifier,
+    required bool isOnline,
   }) {
     final email = currentUser?.email ?? cachedUser?['email'] ?? 'Akun Google';
     final name = currentUser?.displayName ?? cachedUser?['name'] ?? 'Pengguna';
@@ -270,8 +273,8 @@ class SyncAccountSheet extends ConsumerWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: AppTheme.borderStrong(context),
-                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                child: photoUrl == null
+                backgroundImage: (photoUrl != null && isOnline) ? NetworkImage(photoUrl) : null,
+                child: (photoUrl == null || !isOnline)
                     ? Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'G',
                         style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryButtonText(context)),
@@ -306,9 +309,23 @@ class SyncAccountSheet extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Container(width: 6, height: 6, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isOnline ? Colors.green : Colors.amber,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     const SizedBox(width: 6),
-                    Text('Aktif', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary(context))),
+                    Text(
+                      isOnline ? 'Online' : 'Offline',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isOnline ? Colors.green : Colors.amber,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -345,7 +362,7 @@ class SyncAccountSheet extends ConsumerWidget {
                   Text(
                     syncState.remoteBackup?.exists == true
                         ? 'Tersedia (${syncState.remoteBackup?.sizeBytes != null ? (syncState.remoteBackup!.sizeBytes! / 1024).toStringAsFixed(1) : '0'} KB)'
-                        : (syncState.isChecking ? 'Memeriksa...' : 'Belum ada'),
+                        : (syncState.isChecking ? 'Memeriksa...' : (isOnline ? 'Belum ada' : 'Tidak diketahui (Offline)')),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -378,12 +395,19 @@ class SyncAccountSheet extends ConsumerWidget {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: isOnline ? Colors.green : Colors.amber,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Aktif di Latar Belakang',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green),
+                      Text(
+                        isOnline ? 'Aktif di Latar Belakang' : 'Tertunda (Offline)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isOnline ? Colors.green : Colors.amber,
+                        ),
                       ),
                     ],
                   ),
@@ -392,6 +416,31 @@ class SyncAccountSheet extends ConsumerWidget {
             ],
           ),
         ),
+
+        if (!isOnline) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 20, color: Colors.amber),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Perangkat Anda sedang offline. Seluruh data transaksi baru tetap tersimpan aman di HP dan akan otomatis dicadangkan ke Google Drive saat terhubung ke internet.',
+                    style: TextStyle(fontSize: 12, height: 1.4, color: AppTheme.textPrimary(context)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         if (syncState.remoteBackup?.exists == true && syncState.localTxCount == 0) ...[
           const SizedBox(height: 14),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/database/database_helper.dart';
@@ -57,6 +58,42 @@ final cachedGoogleUserProvider = FutureProvider<Map<String, String?>?>((ref) asy
   return GoogleAuthService.instance.getCachedUserData();
 });
 
+class ConnectivityNotifier extends StateNotifier<bool> {
+  Timer? _timer;
+
+  ConnectivityNotifier() : super(true) {
+    final isTesting = Platform.environment.containsKey('FLUTTER_TEST');
+    if (!isTesting) {
+      checkConnection();
+      _timer = Timer.periodic(const Duration(seconds: 8), (_) => checkConnection());
+    }
+  }
+
+  Future<bool> checkConnection() async {
+    final online = await DriveSyncService.instance.hasInternetConnection();
+    if (mounted && state != online) {
+      state = online;
+    }
+    return online;
+  }
+
+  void setOnline(bool value) {
+    if (mounted && state != value) {
+      state = value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
+
+final isOnlineProvider = StateNotifierProvider<ConnectivityNotifier, bool>((ref) {
+  return ConnectivityNotifier();
+});
+
 class SyncNotifier extends StateNotifier<SyncState> {
   final Ref ref;
   StreamSubscription<SyncProgress>? _progressSub;
@@ -103,14 +140,44 @@ class SyncNotifier extends StateNotifier<SyncState> {
     }
   }
 
+  String _formatErrorMessage(dynamic error, String action) {
+    final msg = error.toString();
+    if (msg.contains('SocketException') ||
+        msg.contains('Failed host lookup') ||
+        msg.contains('ClientException') ||
+        msg.contains('NetworkImage') ||
+        msg.contains('HandshakeException') ||
+        msg.contains('TimeoutException') ||
+        msg.contains('tidak ada internet') ||
+        msg.contains('No address associated with hostname')) {
+      ref.read(isOnlineProvider.notifier).setOnline(false);
+      return 'Tidak ada koneksi internet. Data lokal Anda aman di HP dan akan otomatis dicadangkan saat online.';
+    }
+    if (msg.contains('Belum login')) {
+      return 'Silakan hubungkan akun Google Anda terlebih dahulu.';
+    }
+    if (msg.contains('File cadangan di Google Drive kosong')) {
+      return 'File cadangan di Google Drive kosong atau belum tersedia.';
+    }
+    final cleaned = msg.replaceFirst(RegExp(r'^Exception:\s*'), '');
+    return 'Gagal $action: $cleaned';
+  }
+
   Future<void> checkRemoteBackup() async {
     state = state.copyWith(isChecking: true, error: null);
     try {
+      final isOnline = await DriveSyncService.instance.hasInternetConnection();
+      ref.read(isOnlineProvider.notifier).setOnline(isOnline);
+      if (!isOnline) {
+        final txCount = await DatabaseHelper.instance.getTransactionCount();
+        state = state.copyWith(isChecking: false, localTxCount: txCount);
+        return;
+      }
       final info = await DriveSyncService.instance.checkRemoteBackup();
       final txCount = await DatabaseHelper.instance.getTransactionCount();
       state = state.copyWith(isChecking: false, remoteBackup: info, localTxCount: txCount);
-    } catch (e) {
-      state = state.copyWith(isChecking: false, error: e.toString());
+    } catch (_) {
+      state = state.copyWith(isChecking: false);
     }
   }
 
@@ -150,7 +217,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
         return false;
       }
     } catch (e) {
-      state = state.copyWith(isSyncing: false, error: 'Gagal login: $e');
+      state = state.copyWith(isSyncing: false, error: _formatErrorMessage(e, 'login'));
       return false;
     }
   }
@@ -165,6 +232,16 @@ class SyncNotifier extends StateNotifier<SyncState> {
   Future<bool> backupNow({bool force = false}) async {
     state = state.copyWith(isSyncing: true, error: null, message: 'Mengunggah cadangan ke Google Drive...');
     try {
+      final isOnline = await DriveSyncService.instance.hasInternetConnection();
+      ref.read(isOnlineProvider.notifier).setOnline(isOnline);
+      if (!isOnline) {
+        state = state.copyWith(
+          isSyncing: false,
+          error: 'Tidak ada koneksi internet. Data lokal Anda aman di HP dan akan otomatis dicadangkan saat online.',
+        );
+        return false;
+      }
+
       final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
       if (isLocalEmpty && !force) {
         final remote = await DriveSyncService.instance.checkRemoteBackup();
@@ -191,7 +268,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
     } catch (e) {
       state = state.copyWith(
         isSyncing: false,
-        error: 'Gagal mencadangkan: $e',
+        error: _formatErrorMessage(e, 'mencadangkan'),
       );
       return false;
     }
@@ -200,6 +277,16 @@ class SyncNotifier extends StateNotifier<SyncState> {
   Future<bool> restoreNow() async {
     state = state.copyWith(isSyncing: true, error: null, message: 'Mengunduh dan memulihkan data dari Google Drive...');
     try {
+      final isOnline = await DriveSyncService.instance.hasInternetConnection();
+      ref.read(isOnlineProvider.notifier).setOnline(isOnline);
+      if (!isOnline) {
+        state = state.copyWith(
+          isSyncing: false,
+          error: 'Tidak ada koneksi internet. Silakan hubungkan HP ke internet untuk memulihkan cadangan dari Google Drive.',
+        );
+        return false;
+      }
+
       final success = await DriveSyncService.instance.restoreFromDrive();
       final lastTime = await DriveSyncService.instance.getLastSyncTime();
 
@@ -228,7 +315,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
     } catch (e) {
       state = state.copyWith(
         isSyncing: false,
-        error: 'Gagal memulihkan: $e',
+        error: _formatErrorMessage(e, 'memulihkan'),
       );
       return false;
     }

@@ -92,10 +92,15 @@ class MainScaffold extends ConsumerWidget {
                 final userAsync = ref.watch(googleUserProvider);
                 final cachedUserAsync = ref.watch(cachedGoogleUserProvider);
                 final syncState = ref.watch(syncProvider);
+                final isOnline = ref.watch(isOnlineProvider);
                 final isLoggedIn = userAsync.valueOrNull != null || (cachedUserAsync.valueOrNull?['email'] != null);
 
                 return IconButton(
-                  tooltip: 'Cadangan & Sinkronisasi',
+                  tooltip: isLoggedIn
+                      ? (isOnline
+                          ? 'Cadangan & Sinkronisasi (Online)'
+                          : 'Mode Offline (Data Tersimpan di HP)')
+                      : 'Cadangan & Sinkronisasi',
                   icon: syncState.isSyncing
                       ? SizedBox(
                           width: 18,
@@ -120,8 +125,8 @@ class MainScaffold extends ConsumerWidget {
                                 child: Container(
                                   width: 7,
                                   height: 7,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.green,
+                                  decoration: BoxDecoration(
+                                    color: isOnline ? Colors.green : Colors.amber,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
