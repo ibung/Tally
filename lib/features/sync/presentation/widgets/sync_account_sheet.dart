@@ -559,9 +559,7 @@ class SyncAccountSheet extends ConsumerWidget {
         // Sign Out Button
         Center(
           child: TextButton.icon(
-            onPressed: () async {
-              await syncNotifier.signOut();
-            },
+            onPressed: () => _showSignOutConfirmation(context, syncNotifier),
             icon: Icon(Icons.logout_rounded, size: 16, color: AppTheme.error(context)),
             label: Text(
               'Keluar dari Akun Google',
@@ -570,6 +568,51 @@ class SyncAccountSheet extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showSignOutConfirmation(BuildContext context, SyncNotifier syncNotifier) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardBg(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Keluar dari Akun?',
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary(context)),
+        ),
+        content: Text(
+          'Sinkronisasi otomatis ke Google Drive akan dinonaktifkan di HP ini. Seluruh data transaksi lokal Anda tetap aman dan tidak akan terhapus.',
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary(context), height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await syncNotifier.signOut();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.error(context),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Ya, Keluar',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -589,9 +632,13 @@ class SyncAccountSheet extends ConsumerWidget {
               : 'Data saat ini ($localTxCount transaksi) akan digantikan dengan data cadangan dari Google Drive Anda. Lanjutkan?',
           style: TextStyle(fontSize: 14, color: AppTheme.textSecondary(context), height: 1.4),
         ),
+        actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
             child: Text('Batal', style: TextStyle(color: AppTheme.textSecondary(context))),
           ),
           ElevatedButton(
@@ -602,9 +649,14 @@ class SyncAccountSheet extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryButtonBg(context),
               foregroundColor: AppTheme.primaryButtonText(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
             ),
-            child: const Text('Ya, Pulihkan'),
+            child: const Text(
+              'Ya, Pulihkan',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
