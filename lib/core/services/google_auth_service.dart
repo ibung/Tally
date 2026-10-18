@@ -41,17 +41,6 @@ class GoogleAuthService {
           _userStreamController.add(null);
         }
       });
-
-      // Attempt silent/lightweight restore
-      final restoreFuture = GoogleSignIn.instance.attemptLightweightAuthentication();
-      if (restoreFuture != null) {
-        final restored = await restoreFuture;
-        if (restored != null) {
-          _currentUser = restored;
-          await _saveCachedUser(restored);
-          _userStreamController.add(restored);
-        }
-      }
     } catch (_) {
       // Ignored for offline mode
     }

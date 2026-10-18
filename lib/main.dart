@@ -17,10 +17,9 @@ void main() async {
   // Initialize database
   await DatabaseHelper.instance.database;
 
-  // Initialize Google Auth & background sync
+  // Initialize Google Auth & periodic sync
   GoogleAuthService.instance.initialize().then((_) {
     DriveSyncService.instance.initializePeriodicSync();
-    DriveSyncService.instance.triggerBackgroundSync(immediate: true, isDataChange: false);
   });
 
   // Load saved theme mode

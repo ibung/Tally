@@ -143,6 +143,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
             message: 'Berhasil login: ${user.email}',
           );
         }
+        ref.invalidate(cachedGoogleUserProvider);
         return true;
       } else {
         state = state.copyWith(isSyncing: false, error: 'Login dibatalkan.');
@@ -156,6 +157,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   Future<void> signOut() async {
     await GoogleAuthService.instance.signOut();
+    ref.invalidate(cachedGoogleUserProvider);
     final txCount = await DatabaseHelper.instance.getTransactionCount();
     state = SyncState(localTxCount: txCount);
   }
