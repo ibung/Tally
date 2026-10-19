@@ -42,3 +42,21 @@ android {
 flutter {
     source = "../.."
 }
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    doLast {
+        val outputDir = File(layout.buildDirectory.asFile.get(), "outputs/flutter-apk")
+        val arm64 = File(outputDir, "app-arm64-v8a-release.apk")
+        val universal = File(outputDir, "app-release.apk")
+        val releaseDir = File(rootDir.parentFile, "release")
+        releaseDir.mkdirs()
+
+        val sourceApk = if (arm64.exists()) arm64 else if (universal.exists()) universal else null
+        if (sourceApk != null) {
+            sourceApk.copyTo(File(outputDir, "Tally.apk"), overwrite = true)
+            sourceApk.copyTo(File(releaseDir, "Tally.apk"), overwrite = true)
+            sourceApk.copyTo(File(releaseDir, "Tally-v${flutter.versionName}.apk"), overwrite = true)
+        }
+    }
+}
+
