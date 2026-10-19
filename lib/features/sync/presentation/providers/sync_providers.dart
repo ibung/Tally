@@ -97,18 +97,20 @@ final isOnlineProvider = StateNotifierProvider<ConnectivityNotifier, bool>((ref)
 class SyncNotifier extends StateNotifier<SyncState> {
   final Ref ref;
   StreamSubscription<SyncProgress>? _progressSub;
+  StreamSubscription<void>? _dataSub;
 
   SyncNotifier(this.ref) : super(const SyncState()) {
     _init();
-    _subscribeProgress();
+    _subscribeEvents();
   }
 
-  void _subscribeProgress() {
+  void _subscribeEvents() {
     _progressSub = DriveSyncService.instance.syncProgressStream.listen((progress) async {
       if (!mounted) return;
       if (progress == SyncProgress.syncing) {
         state = state.copyWith(isSyncing: true);
       } else if (progress == SyncProgress.success) {
+        _invalidateProviders();
         final lastTime = await DriveSyncService.instance.getLastSyncTime();
         final txCount = await DatabaseHelper.instance.getTransactionCount();
         state = state.copyWith(
@@ -123,11 +125,34 @@ class SyncNotifier extends StateNotifier<SyncState> {
         }
       }
     });
+
+    _dataSub = DriveSyncService.instance.dataUpdatedStream.listen((_) async {
+      if (!mounted) return;
+      _invalidateProviders();
+      final lastTime = await DriveSyncService.instance.getLastSyncTime();
+      final txCount = await DatabaseHelper.instance.getTransactionCount();
+      state = state.copyWith(
+        localTxCount: txCount,
+        lastSyncTime: lastTime,
+      );
+    });
+  }
+
+  void _invalidateProviders() {
+    ref.read(transactionsVersionProvider.notifier).state++;
+    ref.invalidate(walletsProvider);
+    ref.invalidate(totalActiveBalanceProvider);
+    ref.invalidate(categoriesProvider);
+    ref.invalidate(transactionsProvider);
+    ref.invalidate(budgetsProvider);
+    ref.invalidate(dailySummaryProvider);
+    ref.invalidate(historicalEndBalanceProvider);
   }
 
   @override
   void dispose() {
     _progressSub?.cancel();
+    _dataSub?.cancel();
     super.dispose();
   }
 
@@ -137,6 +162,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
     state = state.copyWith(lastSyncTime: lastTime, localTxCount: txCount);
     if (await GoogleAuthService.instance.isLoggedIn()) {
       await checkRemoteBackup();
+      DriveSyncService.instance.triggerBackgroundSync(immediate: true, isDataChange: false);
     }
   }
 
@@ -187,8 +213,9 @@ class SyncNotifier extends StateNotifier<SyncState> {
       final user = await GoogleAuthService.instance.signIn();
       if (user != null) {
         state = state.copyWith(isSyncing: true, message: 'Berhasil login: ${user.email}. Memeriksa cadangan...');
-        
-        final remote = await DriveSyncService.instance.checkRemoteBackup();
+        ref.invalidate(cachedGoogleUserProvider);
+
+        final remote = await DriveSyncService.instance.checkRemoteBackup(interactive: true);
         final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
         final txCount = await DatabaseHelper.instance.getTransactionCount();
 
@@ -196,12 +223,18 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
         // Jika ada cadangan di cloud dan database lokal saat ini KOSONG (misal install ulang / ganti HP),
         // OTOMATIS pulihkan data dari Google Drive!
-        if (remote.exists && isLocalEmpty) {
+        if (remote.exists && (isLocalEmpty || txCount == 0)) {
           state = state.copyWith(
             message: 'Ditemukan data cadangan di Google Drive. Memulihkan data Anda...',
           );
           await restoreNow();
-        } else if (!remote.exists && !isLocalEmpty) {
+        } else if (remote.exists && !isLocalEmpty && txCount > 0) {
+          // Ada data di cloud dan juga ada data lokal -> Sinkronkan cerdas (Smart Merge)
+          state = state.copyWith(
+            message: 'Menyinkronkan data antar perangkat...',
+          );
+          await syncNow();
+        } else if (!remote.exists && (!isLocalEmpty || txCount > 0)) {
           // Jika di cloud belum ada cadangan dan lokal ada data, otomatis cadangkan
           await backupNow();
         } else {
@@ -210,7 +243,6 @@ class SyncNotifier extends StateNotifier<SyncState> {
             message: 'Berhasil login: ${user.email}',
           );
         }
-        ref.invalidate(cachedGoogleUserProvider);
         return true;
       } else {
         state = state.copyWith(isSyncing: false, error: 'Login dibatalkan.');
@@ -227,6 +259,43 @@ class SyncNotifier extends StateNotifier<SyncState> {
     ref.invalidate(cachedGoogleUserProvider);
     final txCount = await DatabaseHelper.instance.getTransactionCount();
     state = SyncState(localTxCount: txCount);
+  }
+
+  Future<bool> syncNow() async {
+    state = state.copyWith(isSyncing: true, error: null, message: 'Menyinkronkan data dengan Google Drive...');
+    try {
+      final isOnline = await DriveSyncService.instance.hasInternetConnection();
+      ref.read(isOnlineProvider.notifier).setOnline(isOnline);
+      if (!isOnline) {
+        state = state.copyWith(
+          isSyncing: false,
+          error: 'Tidak ada koneksi internet. Data lokal Anda aman di HP dan akan otomatis disinkronkan saat online.',
+        );
+        return false;
+      }
+
+      final success = await DriveSyncService.instance.syncWithDrive(interactive: true);
+      final lastTime = await DriveSyncService.instance.getLastSyncTime();
+
+      _invalidateProviders();
+
+      final txCount = await DatabaseHelper.instance.getTransactionCount();
+
+      state = state.copyWith(
+        isSyncing: false,
+        lastSyncTime: lastTime,
+        localTxCount: txCount,
+        message: 'Data berhasil disinkronkan ($txCount transaksi)!',
+      );
+      await checkRemoteBackup();
+      return success;
+    } catch (e) {
+      state = state.copyWith(
+        isSyncing: false,
+        error: _formatErrorMessage(e, 'sinkronisasi'),
+      );
+      return false;
+    }
   }
 
   Future<bool> backupNow({bool force = false}) async {

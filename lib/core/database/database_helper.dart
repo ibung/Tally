@@ -57,6 +57,87 @@ class DatabaseHelper {
     return txCount == 0 && budgetCount == 0 && walletCount <= 1;
   }
 
+  /// Menggabungkan database eksternal (hasil unduh dari cloud) ke dalam database lokal.
+  /// Mencegah hilangnya data transaksi saat kedua HP memiliki perubahan bersamaan (smart merge).
+  Future<void> mergeExternalDatabase(String externalDbPath) async {
+    final externalDb = await openReadOnlyDatabase(externalDbPath);
+    try {
+      final localDb = await database;
+
+      await localDb.transaction((txn) async {
+        // 1. Wallets
+        final remoteWallets = await externalDb.query('wallets');
+        for (final row in remoteWallets) {
+          final id = row['id'];
+          if (id == null) continue;
+          final existing = await txn.query('wallets', where: 'id = ?', whereArgs: [id], limit: 1);
+          if (existing.isEmpty) {
+            await txn.insert('wallets', row);
+          } else {
+            final localUpdated = DateTime.tryParse(existing.first['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final remoteUpdated = DateTime.tryParse(row['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            if (remoteUpdated.isAfter(localUpdated)) {
+              await txn.update('wallets', row, where: 'id = ?', whereArgs: [id]);
+            }
+          }
+        }
+
+        // 2. Categories
+        final remoteCategories = await externalDb.query('categories');
+        for (final row in remoteCategories) {
+          final id = row['id'];
+          if (id == null) continue;
+          final existing = await txn.query('categories', where: 'id = ?', whereArgs: [id], limit: 1);
+          if (existing.isEmpty) {
+            await txn.insert('categories', row);
+          } else {
+            final localUpdated = DateTime.tryParse(existing.first['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final remoteUpdated = DateTime.tryParse(row['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            if (remoteUpdated.isAfter(localUpdated)) {
+              await txn.update('categories', row, where: 'id = ?', whereArgs: [id]);
+            }
+          }
+        }
+
+        // 3. Daily Budgets
+        final remoteBudgets = await externalDb.query('daily_budgets');
+        for (final row in remoteBudgets) {
+          final id = row['id'];
+          if (id == null) continue;
+          final existing = await txn.query('daily_budgets', where: 'id = ?', whereArgs: [id], limit: 1);
+          if (existing.isEmpty) {
+            await txn.insert('daily_budgets', row);
+          } else {
+            final localUpdated = DateTime.tryParse(existing.first['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final remoteUpdated = DateTime.tryParse(row['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            if (remoteUpdated.isAfter(localUpdated)) {
+              await txn.update('daily_budgets', row, where: 'id = ?', whereArgs: [id]);
+            }
+          }
+        }
+
+        // 4. Transactions
+        final remoteTransactions = await externalDb.query('transactions');
+        for (final row in remoteTransactions) {
+          final id = row['id'];
+          if (id == null) continue;
+          final existing = await txn.query('transactions', where: 'id = ?', whereArgs: [id], limit: 1);
+          if (existing.isEmpty) {
+            await txn.insert('transactions', row);
+          } else {
+            final localUpdated = DateTime.tryParse(existing.first['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final remoteUpdated = DateTime.tryParse(row['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+            if (remoteUpdated.isAfter(localUpdated)) {
+              await txn.update('transactions', row, where: 'id = ?', whereArgs: [id]);
+            }
+          }
+        }
+      });
+    } finally {
+      await externalDb.close();
+    }
+  }
+
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _dbName);

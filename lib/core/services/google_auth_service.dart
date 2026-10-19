@@ -144,10 +144,13 @@ class GoogleAuthService {
 
       // Otorisasi Drive scope sekali di awal saat user login interaktif
       try {
-        await account.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
-      } catch (_) {}
+        final authz = await account.authorizationClient.authorizeScopes([drive.DriveApi.driveAppdataScope]);
+        final client = authz.authClient(scopes: [drive.DriveApi.driveAppdataScope]);
+        DriveSyncService.instance.setCachedDriveClient(client);
+      } catch (_) {
+        DriveSyncService.instance.invalidateCachedDriveApi();
+      }
 
-      DriveSyncService.instance.invalidateCachedDriveApi();
       return account;
     } catch (e) {
       rethrow;

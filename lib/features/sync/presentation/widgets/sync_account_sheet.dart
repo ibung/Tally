@@ -516,7 +516,7 @@ class SyncAccountSheet extends ConsumerWidget {
             onPressed: syncState.isSyncing
                 ? null
                 : () async {
-                    await syncNotifier.backupNow();
+                    await syncNotifier.syncNow();
                   },
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.textPrimary(context),
@@ -527,22 +527,22 @@ class SyncAccountSheet extends ConsumerWidget {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.backup_rounded, size: 20),
+                Icon(Icons.sync_rounded, size: 20),
                 SizedBox(width: 10),
                 Text(
-                  'Cadangkan Sekarang',
+                  'Sinkronkan Sekarang',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
         ] else ...[
-          // Prioritas 1: Cadangkan
+          // Prioritas 1: Sinkronkan Sekarang (Dua Arah & Smart Merge)
           ElevatedButton(
             onPressed: syncState.isSyncing
                 ? null
                 : () async {
-                    await syncNotifier.backupNow();
+                    await syncNotifier.syncNow();
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryButtonBg(context),
@@ -570,37 +570,70 @@ class SyncAccountSheet extends ConsumerWidget {
                 : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.backup_rounded, size: 20),
+                      Icon(Icons.sync_rounded, size: 20),
                       SizedBox(width: 10),
                       Text(
-                        'Cadangkan Sekarang',
+                        'Sinkronkan Sekarang',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
           ),
           const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: syncState.isSyncing
-                ? null
-                : () => _showRestoreConfirmation(context, syncNotifier, syncState.localTxCount),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.textPrimary(context),
-              side: BorderSide(color: AppTheme.borderStrong(context)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.restore_rounded, size: 20),
-                SizedBox(width: 10),
-                Text(
-                  'Pulihkan Data dari Cloud',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: syncState.isSyncing
+                      ? null
+                      : () async {
+                          await syncNotifier.backupNow();
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textPrimary(context),
+                    side: BorderSide(color: AppTheme.borderStrong(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cloud_upload_outlined, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Cadangkan',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: syncState.isSyncing
+                      ? null
+                      : () => _showRestoreConfirmation(context, syncNotifier, syncState.localTxCount),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textPrimary(context),
+                    side: BorderSide(color: AppTheme.borderStrong(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cloud_download_outlined, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Pulihkan',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
         const SizedBox(height: 14),

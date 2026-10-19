@@ -30,11 +30,15 @@ class DriveSyncService {
   static const _backupFileName = 'tally_backup.db';
   static const _prefKeyLastSync = 'drive_last_sync_time';
   static const _prefKeyPendingChanges = 'drive_has_pending_changes';
+  static const _prefKeyLastRemoteModified = 'drive_last_remote_modified';
 
   final _syncProgressController = StreamController<SyncProgress>.broadcast();
   Stream<SyncProgress> get syncProgressStream => _syncProgressController.stream;
   SyncProgress _currentProgress = SyncProgress.idle;
   SyncProgress get currentProgress => _currentProgress;
+
+  final _dataUpdatedController = StreamController<void>.broadcast();
+  Stream<void> get dataUpdatedStream => _dataUpdatedController.stream;
 
   Timer? _debounceTimer;
   Timer? _periodicTimer;
@@ -42,12 +46,9 @@ class DriveSyncService {
 
   void initializePeriodicSync() {
     _periodicTimer?.cancel();
-    // Cek setiap 3 menit: jika ada perubahan yang tertunda (misal tadi offline), sync otomatis
+    // Cek setiap 3 menit: sync otomatis untuk mendeteksi perubahan dari HP lain atau perubahan tertunda
     _periodicTimer = Timer.periodic(const Duration(minutes: 3), (_) async {
-      final hasPending = await hasPendingChanges();
-      if (hasPending) {
-        triggerBackgroundSync(immediate: true, isDataChange: false);
-      }
+      triggerBackgroundSync(immediate: true, isDataChange: false);
     });
   }
 
@@ -83,6 +84,13 @@ class DriveSyncService {
 
   drive.DriveApi? _cachedDriveApi;
   DateTime? _cachedDriveApiTime;
+
+  void setCachedDriveClient(dynamic authClient) {
+    if (authClient != null) {
+      _cachedDriveApi = drive.DriveApi(authClient);
+      _cachedDriveApiTime = DateTime.now();
+    }
+  }
 
   void invalidateCachedDriveApi() {
     _cachedDriveApi = null;
@@ -121,11 +129,14 @@ class DriveSyncService {
     }
   }
 
-  Future<void> _recordSyncTime() async {
+  Future<void> _recordSyncTime({DateTime? remoteModified}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_prefKeyLastSync, DateTime.now().millisecondsSinceEpoch);
       await prefs.setBool(_prefKeyPendingChanges, false);
+      if (remoteModified != null) {
+        await prefs.setInt(_prefKeyLastRemoteModified, remoteModified.millisecondsSinceEpoch);
+      }
     } catch (_) {}
   }
 
@@ -138,6 +149,7 @@ class DriveSyncService {
       final fileList = await driveApi.files.list(
         spaces: 'appDataFolder',
         q: "name = '$_backupFileName' and trashed = false",
+        orderBy: 'modifiedTime desc',
         $fields: 'files(id, name, modifiedTime, size)',
       );
 
@@ -203,31 +215,42 @@ class DriveSyncService {
       final fileList = await driveApi.files.list(
         spaces: 'appDataFolder',
         q: "name = '$_backupFileName' and trashed = false",
-        $fields: 'files(id, name)',
+        orderBy: 'modifiedTime desc',
+        $fields: 'files(id, name, modifiedTime)',
       );
 
       final files = fileList.files;
+      drive.File uploadedFile;
       if (files != null && files.isNotEmpty) {
         // Update file yang ada
         final existingFileId = files.first.id!;
-        await driveApi.files.update(
+        uploadedFile = await driveApi.files.update(
           drive.File(),
           existingFileId,
           uploadMedia: uploadMedia,
+          $fields: 'id, name, modifiedTime',
         );
+
+        // Bersihkan duplikat file lama jika ada lebih dari 1
+        for (int i = 1; i < files.length; i++) {
+          try {
+            await driveApi.files.delete(files[i].id!);
+          } catch (_) {}
+        }
       } else {
         // Buat file baru di appDataFolder
         final newDriveFile = drive.File()
           ..name = _backupFileName
           ..parents = ['appDataFolder'];
 
-        await driveApi.files.create(
+        uploadedFile = await driveApi.files.create(
           newDriveFile,
           uploadMedia: uploadMedia,
+          $fields: 'id, name, modifiedTime',
         );
       }
 
-      await _recordSyncTime();
+      await _recordSyncTime(remoteModified: uploadedFile.modifiedTime);
       return true;
     } catch (e) {
       rethrow;
@@ -273,7 +296,8 @@ class DriveSyncService {
       final fileList = await driveApi.files.list(
         spaces: 'appDataFolder',
         q: "name = '$_backupFileName' and trashed = false",
-        $fields: 'files(id, name)',
+        orderBy: 'modifiedTime desc',
+        $fields: 'files(id, name, modifiedTime)',
       );
 
       final files = fileList.files;
@@ -281,7 +305,8 @@ class DriveSyncService {
         throw Exception('Tidak ditemukan file cadangan di Google Drive.');
       }
 
-      final fileId = files.first.id!;
+      final file = files.first;
+      final fileId = file.id!;
 
       // Unduh versi head/terbaru
       final driveMedia = await driveApi.files.get(
@@ -355,10 +380,122 @@ class DriveSyncService {
       // Buka kembali database setelah ditimpa
       await DatabaseHelper.instance.reopenDatabase();
 
-      await _recordSyncTime();
+      await _recordSyncTime(remoteModified: file.modifiedTime);
+      _dataUpdatedController.add(null);
       return true;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Sinkronisasi dua arah yang cerdas antara HP lokal dan Google Drive:
+  /// 1. Jika HP lokal kosong dan cloud ada data -> otomatis pulihkan dari Google Drive.
+  /// 2. Jika cloud memiliki perubahan lebih baru dan HP lokal tidak ada perubahan offline -> pulihkan dari cloud.
+  /// 3. Jika cloud dan HP lokal sama-sama memiliki perubahan baru -> lakukan Smart Merge (gabungkan keduanya).
+  /// 4. Jika HP lokal memiliki perubahan dan cloud belum diperbarui -> unggah ke Google Drive.
+  Future<bool> syncWithDrive({bool interactive = false}) async {
+    try {
+      final isOnline = await hasInternetConnection();
+      if (!isOnline) {
+        if (interactive) throw Exception('Tidak ada koneksi internet.');
+        return false;
+      }
+
+      final driveApi = await _getDriveApi(interactive: interactive);
+      if (driveApi == null) {
+        if (interactive) throw Exception('Belum login ke akun Google.');
+        return false;
+      }
+
+      final remote = await checkRemoteBackup(interactive: interactive);
+      final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
+      final localTxCount = await DatabaseHelper.instance.getTransactionCount();
+      final hasPending = await hasPendingChanges();
+
+      final prefs = await SharedPreferences.getInstance();
+      final lastRemoteModifiedEpoch = prefs.getInt(_prefKeyLastRemoteModified);
+      final lastRemoteModified = lastRemoteModifiedEpoch != null
+          ? DateTime.fromMillisecondsSinceEpoch(lastRemoteModifiedEpoch)
+          : null;
+
+      // Kasus 1: Di cloud belum ada cadangan sama sekali
+      if (!remote.exists) {
+        if (!isLocalEmpty || localTxCount > 0) {
+          return await backupToDrive(force: true, interactive: interactive);
+        }
+        return true;
+      }
+
+      // Kasus 2: Di cloud ada cadangan, tapi database lokal masih kosong (HP baru / fresh install)
+      if (isLocalEmpty || localTxCount == 0) {
+        final restored = await restoreFromDrive(interactive: interactive);
+        return restored;
+      }
+
+      // Kasus 3: Bandingkan modifiedTime remote dengan yang terakhir tersinkron di HP ini
+      final isRemoteNewer = remote.modifiedTime != null &&
+          (lastRemoteModified == null ||
+              remote.modifiedTime!.isAfter(lastRemoteModified.add(const Duration(seconds: 2))));
+
+      if (isRemoteNewer) {
+        if (!hasPending) {
+          // Cloud diperbarui dari HP lain dan HP ini tidak memiliki transaksi tertunda -> unduh langsung
+          final restored = await restoreFromDrive(interactive: interactive);
+          return restored;
+        } else {
+          // Keduanya punya transaksi baru -> Smart Merge!
+          return await _mergeAndSyncWithDrive(driveApi, remote.fileId!, interactive: interactive);
+        }
+      } else {
+        if (hasPending) {
+          // HP ini punya perubahan baru yang belum terunggah -> unggah
+          return await backupToDrive(force: true, interactive: interactive);
+        } else {
+          // Sudah identik
+          await _recordSyncTime(remoteModified: remote.modifiedTime);
+          return true;
+        }
+      }
+    } catch (e) {
+      if (interactive) rethrow;
+      return false;
+    }
+  }
+
+  Future<bool> _mergeAndSyncWithDrive(
+    drive.DriveApi driveApi,
+    String fileId, {
+    bool interactive = false,
+  }) async {
+    final dbPath = await DatabaseHelper.instance.getDatabaseFilePath();
+    final tempPath = join(dirname(dbPath), 'temp_remote_merge.db');
+    final tempFile = File(tempPath);
+
+    try {
+      final driveMedia = await driveApi.files.get(
+        fileId,
+        downloadOptions: drive.DownloadOptions.fullMedia,
+      ) as drive.Media;
+
+      List<int> downloadedBytes = [];
+      await for (final chunk in driveMedia.stream) {
+        downloadedBytes.addAll(chunk);
+      }
+
+      if (downloadedBytes.isNotEmpty) {
+        await tempFile.writeAsBytes(downloadedBytes, flush: true);
+        await DatabaseHelper.instance.mergeExternalDatabase(tempPath);
+        _dataUpdatedController.add(null);
+      }
+
+      // Setelah merge selesai, unggah database gabungan ke Google Drive
+      return await backupToDrive(force: true, interactive: interactive);
+    } finally {
+      if (await tempFile.exists()) {
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+      }
     }
   }
 
@@ -373,7 +510,7 @@ class DriveSyncService {
     if (immediate) {
       unawaited(_executeBackgroundSync());
     } else {
-      // Debounce 2.5 detik agar aksi beruntun (misal tambah transaksi berturut-turut) digabung menjadi 1 kali upload
+      // Debounce 2.5 detik agar aksi beruntun (misal tambah transaksi berturut-turut) digabung menjadi 1 kali sync
       _debounceTimer = Timer(const Duration(milliseconds: 2500), () {
         unawaited(_executeBackgroundSync());
       });
@@ -393,21 +530,16 @@ class DriveSyncService {
       // 2. Cek koneksi internet
       final isOnline = await hasInternetConnection();
       if (!isOnline) {
-        // Tetap tandai ada pending changes agar disinkronkan saat online kembali
+        // Tetap tandai ada pending changes jika tadi offline
         return;
       }
 
-      // 3. Lindungi cadangan cloud: jangan auto-sync jika DB lokal masih kosong
-      final isLocalEmpty = await DatabaseHelper.instance.isDatabaseEmpty();
-      if (isLocalEmpty) return;
-
-      // 4. Beritahu UI bahwa sinkronisasi sedang berjalan
+      // 3. Beritahu UI bahwa sinkronisasi sedang berjalan
       _currentProgress = SyncProgress.syncing;
       _syncProgressController.add(SyncProgress.syncing);
 
-      final success = await backupToDrive(interactive: false);
+      final success = await syncWithDrive(interactive: false);
       if (success) {
-        await _setPendingChanges(false);
         _currentProgress = SyncProgress.success;
         _syncProgressController.add(SyncProgress.success);
 
