@@ -43,7 +43,7 @@ flutter {
     source = "../.."
 }
 
-tasks.matching { it.name == "assembleRelease" }.configureEach {
+val copyReleaseApkTask = tasks.register("copyReleaseApk") {
     doLast {
         val outputDir = File(layout.buildDirectory.asFile.get(), "outputs/flutter-apk")
         val arm64 = File(outputDir, "app-arm64-v8a-release.apk")
@@ -58,5 +58,9 @@ tasks.matching { it.name == "assembleRelease" }.configureEach {
             sourceApk.copyTo(File(releaseDir, "Tally-v${flutter.versionName}.apk"), overwrite = true)
         }
     }
+}
+
+tasks.matching { it.name.startsWith("assemble") && it.name.endsWith("Release") }.configureEach {
+    finalizedBy(copyReleaseApkTask)
 }
 
