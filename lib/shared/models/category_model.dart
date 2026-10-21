@@ -76,3 +76,47 @@ class CategoryModel {
     };
   }
 }
+
+class CategoryChartItem {
+  final String categoryId;
+  final String categoryName;
+  final String categoryIcon;
+  final String categoryColor;
+  final CategoryType type;
+  final int totalAmount;
+  final int transactionCount;
+  final double percentage; // 0.0 - 1.0
+
+  const CategoryChartItem({
+    required this.categoryId,
+    required this.categoryName,
+    required this.categoryIcon,
+    required this.categoryColor,
+    required this.type,
+    required this.totalAmount,
+    required this.transactionCount,
+    required this.percentage,
+  });
+
+  CategoryChartItem copyWith({
+    String? categoryId,
+    String? categoryName,
+    String? categoryIcon,
+    String? categoryColor,
+    CategoryType? type,
+    int? totalAmount,
+    int? transactionCount,
+    double? percentage,
+  }) {
+    return CategoryChartItem(
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      categoryIcon: categoryIcon ?? this.categoryIcon,
+      categoryColor: categoryColor ?? this.categoryColor,
+      type: type ?? this.type,
+      totalAmount: totalAmount ?? this.totalAmount,
+      transactionCount: transactionCount ?? this.transactionCount,
+      percentage: percentage ?? this.percentage,
+    );
+  }
+}

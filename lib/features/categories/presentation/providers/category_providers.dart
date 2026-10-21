@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:tally/core/utils/formatters.dart';
 import 'package:tally/shared/models/category_model.dart';
 import 'package:tally/shared/repositories/category_repository.dart';
 import 'package:tally/core/services/drive_sync_service.dart';
+import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository();
@@ -107,4 +109,53 @@ final expenseCategoriesProvider = Provider<List<CategoryModel>>((ref) {
 final incomeCategoriesProvider = Provider<List<CategoryModel>>((ref) {
   final active = ref.watch(activeCategoriesProvider);
   return active.where((c) => c.type == CategoryType.income).toList();
+});
+
+enum CategoryChartPeriod {
+  thisMonth('Bulan Ini'),
+  last30Days('30 Hari'),
+  allTime('Semua');
+
+  final String label;
+  const CategoryChartPeriod(this.label);
+}
+
+final categoryChartPeriodProvider = StateProvider<CategoryChartPeriod>((ref) {
+  return CategoryChartPeriod.thisMonth;
+});
+
+final categoryChartTypeProvider = StateProvider<CategoryType>((ref) {
+  return CategoryType.expense;
+});
+
+final categoryChartDataProvider =
+    FutureProvider.autoDispose<List<CategoryChartItem>>((ref) async {
+  // Otomatis refresh saat transaksi atau kategori berubah
+  ref.watch(transactionsVersionProvider);
+  ref.watch(categoriesProvider);
+
+  final repo = ref.watch(categoryRepositoryProvider);
+  final type = ref.watch(categoryChartTypeProvider);
+  final period = ref.watch(categoryChartPeriodProvider);
+
+  String? startDate;
+  String? endDate;
+
+  final now = DateTime.now();
+  if (period == CategoryChartPeriod.thisMonth) {
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month + 1, 0);
+    startDate = DateFormatter.toLocalDate(start);
+    endDate = DateFormatter.toLocalDate(end);
+  } else if (period == CategoryChartPeriod.last30Days) {
+    final start = now.subtract(const Duration(days: 30));
+    startDate = DateFormatter.toLocalDate(start);
+    endDate = DateFormatter.toLocalDate(now);
+  }
+
+  return repo.getCategoryBreakdown(
+    type: type,
+    startDate: startDate,
+    endDate: endDate,
+  );
 });

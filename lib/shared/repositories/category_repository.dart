@@ -77,4 +77,67 @@ class CategoryRepository {
     final database = await _db.database;
     return database.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Mengambil rincian pengeluaran/pemasukan per kategori untuk grafik analisis.
+  Future<List<CategoryChartItem>> getCategoryBreakdown({
+    required CategoryType type,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final database = await _db.database;
+    final conditions = <String>[
+      't.type = ?',
+      "(t.note IS NULL OR LOWER(t.note) NOT LIKE '%koreksi saldo%')",
+    ];
+    final args = <dynamic>[type.value];
+
+    if (startDate != null) {
+      conditions.add('t.local_date >= ?');
+      args.add(startDate);
+    }
+    if (endDate != null) {
+      conditions.add('t.local_date <= ?');
+      args.add(endDate);
+    }
+
+    final where = 'WHERE ${conditions.join(' AND ')}';
+
+    final rows = await database.rawQuery('''
+      SELECT 
+        COALESCE(c.id, 'uncategorized') as category_id,
+        COALESCE(c.name, 'Tanpa Kategori') as category_name,
+        COALESCE(c.icon, 'other') as category_icon,
+        COALESCE(c.color, '#0A0A0A') as category_color,
+        COALESCE(SUM(t.amount), 0) as total_amount,
+        COUNT(t.id) as transaction_count
+      FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
+      $where
+      GROUP BY t.category_id
+      HAVING total_amount > 0
+      ORDER BY total_amount DESC
+    ''', args);
+
+    if (rows.isEmpty) return [];
+
+    final grandTotal = rows.fold<int>(
+      0,
+      (sum, r) => sum + ((r['total_amount'] as num?)?.toInt() ?? 0),
+    );
+
+    return rows.map((r) {
+      final amount = (r['total_amount'] as num?)?.toInt() ?? 0;
+      final pct = grandTotal > 0 ? (amount / grandTotal) : 0.0;
+      return CategoryChartItem(
+        categoryId: r['category_id'] as String,
+        categoryName: r['category_name'] as String,
+        categoryIcon: r['category_icon'] as String,
+        categoryColor: r['category_color'] as String,
+        type: type,
+        totalAmount: amount,
+        transactionCount: (r['transaction_count'] as num?)?.toInt() ?? 0,
+        percentage: pct,
+      );
+    }).toList();
+  }
 }
