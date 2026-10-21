@@ -154,15 +154,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     );
   }
 
-  String _formatBudgetPeriodRange(DailyBudgetModel budget) {
+  String _formatBudgetPeriodRange(DailyBudgetModel budget, DateTime activeDate) {
     final start = DateTime.tryParse(budget.startDate);
     final end = budget.endDate != null ? DateTime.tryParse(budget.endDate!) : null;
 
     if (budget.isDaily) {
-      if (start != null) {
-        return 'Harian • ${DateFormatter.formatDate(start)}';
+      final relative = DateFormatter.formatRelative(activeDate);
+      if (relative == 'Hari ini' || relative == 'Kemarin' || relative == 'Besok') {
+        return '$relative • ${DateFormatter.formatDate(activeDate)}';
       }
-      return 'Harian';
+      return DateFormatter.formatDate(activeDate);
     }
 
     if (start != null && end != null) {
@@ -204,6 +205,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   @override
   Widget build(BuildContext context) {
     final budgetsAsync = ref.watch(budgetsProvider);
+    final activeDate = ref.watch(selectedDateForBudgetsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.bg(context),
@@ -625,7 +627,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                             Row(
                                               children: [
                                                 Text(
-                                                  '${CurrencyFormatter.format(budget.dailyLimit)} ${budget.period.rateLabel}',
+                                                  budget.period.rateLabel.trim().isNotEmpty
+                                                      ? '${CurrencyFormatter.format(budget.dailyLimit)} ${budget.period.rateLabel.trim()}'
+                                                      : CurrencyFormatter.format(budget.dailyLimit),
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: AppTheme.textSecondary(context),
@@ -722,7 +726,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        _formatBudgetPeriodRange(budget),
+                                        _formatBudgetPeriodRange(budget, activeDate),
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: AppTheme.textSecondary(context),

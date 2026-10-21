@@ -84,6 +84,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
         _endDate = _startDate.add(const Duration(days: 6));
       } else if (_selectedPeriod == BudgetPeriod.monthly) {
         _endDate = DateTime(_startDate.year, _startDate.month + 1, 0);
+      } else if (_selectedPeriod == BudgetPeriod.custom) {
+        _endDate = _startDate.add(const Duration(days: 30));
       }
     } else {
       _startDate = now;
@@ -611,7 +613,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                 Text(
                   _selectedPeriod == BudgetPeriod.weekly
                       ? 'Sampai tanggal diisi otomatis 7 hari, tetap bisa Anda sesuaikan jika ingin cut-off berbeda.'
-                      : 'Secara realtime melacak bulan berjalan, atau sesuaikan tanggal bila siklus gajian berbeda.',
+                      : _selectedPeriod == BudgetPeriod.monthly
+                          ? 'Secara realtime melacak bulan berjalan, atau sesuaikan tanggal bila siklus gajian berbeda.'
+                          : 'Pilih rentang tanggal bebas untuk kebutuhan atau acara khusus Anda.',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.textSecondary(context),
@@ -640,7 +644,9 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
                       ? 'Rp 2.500.000'
                       : _selectedPeriod == BudgetPeriod.weekly
                           ? 'Rp 500.000'
-                          : 'Rp 50.000',
+                          : _selectedPeriod == BudgetPeriod.custom
+                              ? 'Rp 1.000.000'
+                              : 'Rp 50.000',
                 ),
                 validator: (val) {
                   final amount = CurrencyFormatter.parseInt(val ?? '');

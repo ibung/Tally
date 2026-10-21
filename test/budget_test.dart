@@ -213,5 +213,24 @@ void main() {
       expect(updated.dailyLimit, 100000);
       expect(updated.endDate, '2026-10-18');
     });
+
+    test('Creating a custom (bebas) budget stores period and date range correctly', () async {
+      await container.read(budgetsProvider.notifier).createBudget(
+            name: 'Liburan Akhir Tahun',
+            dailyLimit: 5000000,
+            period: BudgetPeriod.custom,
+            startDate: '2026-12-20',
+            endDate: '2026-12-31',
+          );
+
+      final budgets = await container.read(budgetsProvider.future);
+      final customBudget = budgets.firstWhere((b) => b.name == 'Liburan Akhir Tahun');
+      expect(customBudget.period, BudgetPeriod.custom);
+      expect(customBudget.isCustom, true);
+      expect(customBudget.isDaily, false);
+      expect(customBudget.startDate, '2026-12-20');
+      expect(customBudget.endDate, '2026-12-31');
+      expect(customBudget.dailyLimit, 5000000);
+    });
   });
 }
