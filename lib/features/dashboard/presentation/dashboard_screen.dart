@@ -404,7 +404,9 @@ class _DateNavigator extends StatelessWidget {
     final isSpecialRelative = relativeLabel == 'Hari ini' ||
         relativeLabel == 'Kemarin' ||
         relativeLabel == 'Besok';
-    final displayText = isSpecialRelative ? '$relativeLabel • $fullDateLabel' : fullDateLabel;
+    final displayText = isSpecialRelative
+        ? '$relativeLabel • $fullDateLabel'
+        : DateFormatter.formatFullDateWithDay(selectedDate);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),

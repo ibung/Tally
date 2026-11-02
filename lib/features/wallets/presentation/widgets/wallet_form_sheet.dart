@@ -8,15 +8,23 @@ import 'package:tally/shared/models/wallet_model.dart';
 
 class WalletFormSheet extends ConsumerStatefulWidget {
   final WalletModel? initialWallet;
+  final DateTime? initialDate;
 
-  const WalletFormSheet({super.key, this.initialWallet});
+  const WalletFormSheet({super.key, this.initialWallet, this.initialDate});
 
-  static Future<void> show(BuildContext context, {WalletModel? wallet}) {
+  static Future<void> show(
+    BuildContext context, {
+    WalletModel? wallet,
+    DateTime? initialDate,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => WalletFormSheet(initialWallet: wallet),
+      builder: (context) => WalletFormSheet(
+        initialWallet: wallet,
+        initialDate: initialDate,
+      ),
     );
   }
 
@@ -29,6 +37,7 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _balanceController;
   late String _selectedType;
+  late DateTime _correctionDate;
   bool _isLoading = false;
 
   static const _walletTypes = [
@@ -44,6 +53,7 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
     final wallet = widget.initialWallet;
     _nameController = TextEditingController(text: wallet?.name ?? '');
     _selectedType = wallet?.type ?? 'cash';
+    _correctionDate = widget.initialDate ?? DateTime.now();
 
     final initialBalance = widget.initialWallet != null
         ? widget.initialWallet!.currentBalance
@@ -51,6 +61,27 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
     _balanceController = TextEditingController(
       text: initialBalance > 0 ? CurrencyFormatter.format(initialBalance) : '',
     );
+
+    if (widget.initialWallet != null && widget.initialDate != null) {
+      _loadBalanceForDate(widget.initialDate!);
+    }
+  }
+
+  Future<void> _loadBalanceForDate(DateTime date) async {
+    if (widget.initialWallet == null) return;
+    final repo = ref.read(walletRepositoryProvider);
+    final localDate = DateFormatter.toLocalDate(date);
+    final bal = await repo.getWalletBalance(widget.initialWallet!.id, upToLocalDate: localDate);
+    if (mounted) {
+      setState(() {
+        _balanceController.value = TextEditingValue(
+          text: bal > 0 ? CurrencyFormatter.format(bal) : '',
+          selection: TextSelection.collapsed(
+            offset: (bal > 0 ? CurrencyFormatter.format(bal) : '').length,
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -71,6 +102,44 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
     }
   }
 
+  Future<void> _pickCorrectionDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _correctionDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2040),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.textPrimary(context),
+              onPrimary: AppTheme.primaryButtonText(context),
+              surface: AppTheme.cardBg(context),
+              onSurface: AppTheme.textPrimary(context),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _correctionDate = picked;
+      });
+      await _loadBalanceForDate(picked);
+    }
+  }
+
+  String _formatCorrectionDate(DateTime date) {
+    final relative = DateFormatter.formatRelative(date);
+    final fullDate = DateFormatter.formatDate(date);
+    if (relative == 'Hari ini' || relative == 'Kemarin' || relative == 'Besok') {
+      return '$relative • $fullDate';
+    }
+    return DateFormatter.formatFullDateWithDay(date);
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -85,6 +154,7 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
               name: name,
               type: _selectedType,
               targetBalance: targetBalance,
+              correctionDate: _correctionDate,
             );
       } else {
         await ref.read(walletsProvider.notifier).createWallet(
@@ -260,6 +330,62 @@ class _WalletFormSheetState extends ConsumerState<WalletFormSheet> {
                   hintText: 'Rp 0',
                 ),
               ),
+              if (isEdit) ...[
+                const SizedBox(height: 18),
+                Text(
+                  'Tanggal Koreksi Saldo',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pilih tanggal riwayat saldo yang ingin Anda sesuaikan.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _pickCorrectionDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.subtleBg(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.border(context)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 17,
+                          color: AppTheme.textPrimary(context),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _formatCorrectionDate(_correctionDate),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary(context),
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_drop_down_rounded,
+                          color: AppTheme.textSecondary(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 28),
 
               // Tombol Simpan

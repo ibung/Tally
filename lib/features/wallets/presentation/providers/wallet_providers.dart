@@ -62,6 +62,7 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
     required String type,
     int? targetBalance,
     int? openingBalance,
+    DateTime? correctionDate,
     String? icon,
     String? color,
   }) async {
@@ -71,19 +72,27 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
 
     final newTarget = targetBalance ?? openingBalance;
     if (newTarget != null) {
-      final balanceDiff = newTarget - current.currentBalance;
+      final effectiveDate = correctionDate ?? DateTime.now();
+      final localDate = DateFormatter.toLocalDate(effectiveDate);
+      final balanceAsOfDate = await repo.getWalletBalance(id, upToLocalDate: localDate);
+      final balanceDiff = newTarget - balanceAsOfDate;
       if (balanceDiff != 0) {
         try {
           final txRepo = ref.read(transactionRepositoryProvider);
           final now = DateTime.now();
-          final localDate = DateFormatter.toLocalDate(now);
+          final isSameDay = effectiveDate.year == now.year &&
+              effectiveDate.month == now.month &&
+              effectiveDate.day == now.day;
+          final occurredAt = isSameDay
+              ? now
+              : DateTime(effectiveDate.year, effectiveDate.month, effectiveDate.day, 12, 0, 0);
 
           final correctionTx = TransactionModel(
             id: _uuid.v4(),
             type: balanceDiff > 0 ? TransactionType.income : TransactionType.expense,
             amount: balanceDiff.abs(),
             walletId: id,
-            occurredAt: now,
+            occurredAt: occurredAt,
             localDate: localDate,
             note: 'Koreksi Saldo',
             createdAt: now,
@@ -110,6 +119,8 @@ class WalletsNotifier extends AsyncNotifier<List<WalletModel>> {
     await repo.update(updated);
     await refresh();
     try {
+      ref.invalidate(historicalEndBalanceProvider);
+      ref.invalidate(dailySummaryProvider);
       ref.read(transactionsProvider.notifier).refresh();
     } catch (_) {}
     DriveSyncService.instance.triggerBackgroundSync();

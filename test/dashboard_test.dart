@@ -227,7 +227,7 @@ class FakeWalletRepository implements WalletRepository {
   }
 
   @override
-  Future<int> getWalletBalance(String walletId) async => 500000;
+  Future<int> getWalletBalance(String walletId, {String? upToLocalDate}) async => 500000;
 
   @override
   Future<int> getTotalBalance() async => 500000;

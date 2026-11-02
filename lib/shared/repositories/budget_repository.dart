@@ -1,4 +1,5 @@
 import 'package:tally/core/database/database_helper.dart';
+import 'package:tally/core/utils/formatters.dart';
 import 'package:tally/shared/models/budget_model.dart';
 
 class BudgetRepository {
@@ -19,14 +20,26 @@ class BudgetRepository {
       orderBy: 'name ASC',
     );
 
+    final forDate = forLocalDate != null
+        ? DateFormatter.parseLocalDate(forLocalDate)
+        : DateTime.now();
+
     final list = <DailyBudgetModel>[];
     for (final map in maps) {
       final id = map['id'] as String;
+      final budget = DailyBudgetModel.fromMap(map, forDate: forDate);
       int spent = 0;
       if (forLocalDate != null) {
-        spent = await _calculateSpent(database, id, map, forLocalDate);
+        spent = await _calculateSpent(
+          database,
+          id,
+          budget.period,
+          budget.startDate,
+          budget.endDate,
+          forLocalDate,
+        );
       }
-      list.add(DailyBudgetModel.fromMap(map, calculatedSpent: spent));
+      list.add(budget.copyWith(spent: spent));
     }
     return list;
   }
@@ -40,25 +53,34 @@ class BudgetRepository {
     );
     if (maps.isEmpty) return null;
 
+    final forDate = forLocalDate != null
+        ? DateFormatter.parseLocalDate(forLocalDate)
+        : DateTime.now();
+
+    final budget = DailyBudgetModel.fromMap(maps.first, forDate: forDate);
     int spent = 0;
     if (forLocalDate != null) {
-      spent = await _calculateSpent(database, id, maps.first, forLocalDate);
+      spent = await _calculateSpent(
+        database,
+        id,
+        budget.period,
+        budget.startDate,
+        budget.endDate,
+        forLocalDate,
+      );
     }
 
-    return DailyBudgetModel.fromMap(maps.first, calculatedSpent: spent);
+    return budget.copyWith(spent: spent);
   }
 
   Future<int> _calculateSpent(
     dynamic database,
     String id,
-    Map<String, dynamic> map,
+    BudgetPeriod period,
+    String cycleStartDate,
+    String? cycleEndDate,
     String forLocalDate,
   ) async {
-    final periodStr = map['period'] as String? ?? 'daily';
-    final period = BudgetPeriod.fromString(periodStr);
-    final startDate = map['start_date'] as String? ?? forLocalDate;
-    final endDate = map['end_date'] as String?;
-
     if (period == BudgetPeriod.daily) {
       // Harian: Dihitung per hari untuk tanggal yang sedang dipantau (forLocalDate)
       final spentRes = await database.rawQuery('''
@@ -69,15 +91,15 @@ class BudgetRepository {
       ''', [id, forLocalDate]);
       return (spentRes.first['total'] as num?)?.toInt() ?? 0;
     } else {
-      // Mingguan & Bulanan: Melacak transaksi pengeluaran dalam rentang tanggal kuota
+      // Mingguan, Bulanan & Bebas: Melacak transaksi pengeluaran dalam rentang siklus aktif
       List<dynamic> args;
       String dateFilter;
-      if (endDate != null && endDate.isNotEmpty) {
+      if (cycleEndDate != null && cycleEndDate.isNotEmpty) {
         dateFilter = 'local_date >= ? AND local_date <= ?';
-        args = [id, startDate, endDate];
+        args = [id, cycleStartDate, cycleEndDate];
       } else {
         dateFilter = 'local_date >= ?';
-        args = [id, startDate];
+        args = [id, cycleStartDate];
       }
 
       final spentRes = await database.rawQuery('''

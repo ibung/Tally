@@ -41,6 +41,7 @@ class DateFormatter {
   static final DateFormat _dateTimeFormatter = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
   static final DateFormat _monthYearFormatter = DateFormat('MMMM yyyy', 'id_ID');
   static final DateFormat _dayFormatter = DateFormat('EEEE, dd MMM yyyy', 'id_ID');
+  static final DateFormat _fullDayMonthFormatter = DateFormat('EEEE, d MMMM yyyy', 'id_ID');
 
   /// 15 Okt 2024
   static String formatDate(DateTime date) => _dateFormatter.format(date);
@@ -53,6 +54,9 @@ class DateFormatter {
 
   /// Senin, 15 Okt 2024
   static String formatFullDay(DateTime date) => _dayFormatter.format(date);
+
+  /// Sabtu, 31 Oktober 2026
+  static String formatFullDateWithDay(DateTime date) => _fullDayMonthFormatter.format(date);
 
   /// Format DateTime to YYYY-MM-DD local date (PRD Bab 8)
   static String toLocalDate(DateTime date) =>

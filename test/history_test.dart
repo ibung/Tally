@@ -150,7 +150,7 @@ class FakeHistoryWalletRepository implements WalletRepository {
   Future<int> delete(String id) async => 1;
 
   @override
-  Future<int> getWalletBalance(String walletId) async => 500000;
+  Future<int> getWalletBalance(String walletId, {String? upToLocalDate}) async => 500000;
 
   @override
   Future<int> getTotalBalance() async => 500000;

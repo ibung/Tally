@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tally/core/theme/app_theme.dart';
 import 'package:tally/core/utils/formatters.dart';
+import 'package:tally/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:tally/features/wallets/presentation/providers/wallet_providers.dart';
 import 'package:tally/features/wallets/presentation/widgets/wallet_form_sheet.dart';
 import 'package:tally/shared/models/wallet_model.dart';
@@ -84,7 +85,8 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
               title: Text('Edit Dompet', style: TextStyle(color: AppTheme.textPrimary(context))),
               onTap: () {
                 Navigator.pop(ctx);
-                WalletFormSheet.show(context, wallet: wallet);
+                final activeDate = ref.read(selectedTransactionDateProvider);
+                WalletFormSheet.show(context, wallet: wallet, initialDate: activeDate);
               },
             ),
             ListTile(

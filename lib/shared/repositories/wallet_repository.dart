@@ -79,7 +79,8 @@ class WalletRepository {
 
   /// Menghitung saldo wallet secara akurat sesuai PRD Bab 7:
   /// Saldo = saldo awal + pemasukan - pengeluaran + transfer masuk - transfer keluar
-  Future<int> getWalletBalance(String walletId) async {
+  /// Jika upToLocalDate diberikan, hanya memperhitungkan transaksi hingga tanggal tersebut.
+  Future<int> getWalletBalance(String walletId, {String? upToLocalDate}) async {
     final database = await _db.database;
 
     // 1. Saldo awal
@@ -92,32 +93,35 @@ class WalletRepository {
     if (walletMaps.isEmpty) return 0;
     final openingBalance = (walletMaps.first['opening_balance'] as num?)?.toInt() ?? 0;
 
+    final dateCondition = upToLocalDate != null ? ' AND local_date <= ?' : '';
+    final args = upToLocalDate != null ? [walletId, upToLocalDate] : [walletId];
+
     // 2. Pemasukan (wallet_id = ?)
     final incomeRes = await database.rawQuery('''
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE wallet_id = ? AND type = 'income'
-    ''', [walletId]);
+      WHERE wallet_id = ? AND type = 'income'$dateCondition
+    ''', args);
     final totalIncome = (incomeRes.first['total'] as num?)?.toInt() ?? 0;
 
     // 3. Pengeluaran (wallet_id = ?)
     final expenseRes = await database.rawQuery('''
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE wallet_id = ? AND type = 'expense'
-    ''', [walletId]);
+      WHERE wallet_id = ? AND type = 'expense'$dateCondition
+    ''', args);
     final totalExpense = (expenseRes.first['total'] as num?)?.toInt() ?? 0;
 
     // 4. Transfer Masuk (destination_wallet_id = ?)
     final transferInRes = await database.rawQuery('''
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE destination_wallet_id = ? AND type = 'transfer'
-    ''', [walletId]);
+      WHERE destination_wallet_id = ? AND type = 'transfer'$dateCondition
+    ''', args);
     final totalTransferIn = (transferInRes.first['total'] as num?)?.toInt() ?? 0;
 
     // 5. Transfer Keluar (source_wallet_id = ?)
     final transferOutRes = await database.rawQuery('''
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
-      WHERE source_wallet_id = ? AND type = 'transfer'
-    ''', [walletId]);
+      WHERE source_wallet_id = ? AND type = 'transfer'$dateCondition
+    ''', args);
     final totalTransferOut = (transferOutRes.first['total'] as num?)?.toInt() ?? 0;
 
     return openingBalance + totalIncome - totalExpense + totalTransferIn - totalTransferOut;

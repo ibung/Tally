@@ -72,7 +72,7 @@ class FakeWalletRepository implements WalletRepository {
   }
 
   @override
-  Future<int> getWalletBalance(String walletId) async {
+  Future<int> getWalletBalance(String walletId, {String? upToLocalDate}) async {
     final w = await getById(walletId);
     return w?.currentBalance ?? 0;
   }
@@ -233,6 +233,42 @@ void main() {
       expect(tx.note, 'Koreksi Saldo');
       expect(tx.isCorrection, true);
       expect(tx.walletId, walletId);
+    });
+
+    test('Updating wallet with specific correctionDate records transaction on that date', () async {
+      final fakeTxRepo = FakeTxRepositoryForWalletTest();
+      final testContainer = ProviderContainer(
+        overrides: [
+          walletRepositoryProvider.overrideWithValue(fakeRepo),
+          transactionRepositoryProvider.overrideWithValue(fakeTxRepo),
+        ],
+      );
+      addTearDown(testContainer.dispose);
+
+      await testContainer.read(walletsProvider.notifier).createWallet(
+            name: 'Dompet Tunai',
+            type: 'cash',
+            openingBalance: 100000,
+          );
+
+      final walletId = (await testContainer.read(walletsProvider.future)).first.id;
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+
+      await testContainer.read(walletsProvider.notifier).updateWallet(
+            id: walletId,
+            name: 'Dompet Tunai',
+            type: 'cash',
+            targetBalance: 150000,
+            correctionDate: yesterday,
+          );
+
+      expect(fakeTxRepo.inserted.length, 1);
+      final tx = fakeTxRepo.inserted.first;
+      expect(tx.note, 'Koreksi Saldo');
+      expect(tx.localDate, '${yesterday.year.toString().padLeft(4, '0')}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}');
+      expect(tx.occurredAt.year, yesterday.year);
+      expect(tx.occurredAt.month, yesterday.month);
+      expect(tx.occurredAt.day, yesterday.day);
     });
   });
 }
