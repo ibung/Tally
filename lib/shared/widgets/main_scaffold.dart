@@ -87,6 +87,18 @@ class MainScaffold extends ConsumerWidget {
             ],
           ),
           actions: [
+            IconButton(
+              tooltip: 'Laporan',
+              icon: Icon(
+                Icons.description_outlined,
+                size: 22,
+                color: AppTheme.textPrimary(context),
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push('/reports');
+              },
+            ),
             Consumer(
               builder: (context, ref, _) {
                 final userAsync = ref.watch(googleUserProvider);
